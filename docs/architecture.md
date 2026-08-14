@@ -31,10 +31,9 @@
 
 ## フロントエンド
 
-- Next.js
+- Vite
+- React
 - TypeScript
-- Tailwind CSS
-- shadcn/ui
 
 ---
 
@@ -64,7 +63,7 @@
 ```text
 monorepo/
 ├── apps/
-│   ├── frontend/
+│   ├── web/
 │   └── backend/
 │
 ├── packages/
@@ -100,7 +99,7 @@ Cloudflare
       │
       ├──────────────┐
       ▼              ▼
- Next.js         Hono API
+ Vite + React     Hono API
 Frontend         Cloudflare Workers
       │              │
       └────HTTP──────┘
@@ -125,18 +124,11 @@ Frontend         Cloudflare Workers
 
 ## 方針
 
-Next.jsはReactアプリケーションの基盤として利用する。
-
-以下の機能は採用しない。
-
-- API Routes
-- Route Handlersによる業務API
-- Server Actionsによる業務ロジック
-
-業務処理はすべてバックエンドへ集約する。
+Vite を React アプリケーションの開発・ビルド基盤として利用する。
+画面はクライアントサイドで動作する SPA とし、業務処理はすべてバックエンドへ集約する。
 
 ```text
-Next.js
+Vite + React
 
 ↓
 
