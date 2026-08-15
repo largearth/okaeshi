@@ -3,6 +3,7 @@
 .husky/_
 .next
 .turbo
+.astro
 .wrangler
 node_modules
 apps/backend/src/generated

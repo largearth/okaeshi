@@ -1,0 +1,17 @@
+---
+import SectionCard from "../components/SectionCard.astro";
+import DocsLayout from "../layouts/DocsLayout.astro";
+---
+
+<DocsLayout title="Home">
+  <div class="portal">
+    <p class="eyebrow">PROJECT KNOWLEDGE BASE</p>
+    <h1>Okaeshi Docs</h1>
+    <p class="lead">仕様・設計・開発ルールを、実装と一緒に理解するための入口です。</p>
+    <div class="section-grid">
+      <SectionCard title="Product" description="何を解決し、どのルールで動くか。" href="/product/overview" links={[{ label: "Overview", href: "/product/overview" }, { label: "Domain", href: "/product/domain" }, { label: "Flows", href: "/product/flows" }]} />
+      <SectionCard title="Architecture" description="システムの構成とデータの関係。" href="/architecture/overview" links={[{ label: "Overview", href: "/architecture/overview" }, { label: "Database", href: "/architecture/database" }]} />
+      <SectionCard title="Development" description="品質を保つための開発・運用ルール。" href="/development" links={[{ label: "Workflow", href: "/development/planning-workflow" }, { label: "Testing", href: "/development/test-operations" }, { label: "Quality checks", href: "/development/code-quality-checks" }]} />
+    </div>
+  </div>
+</DocsLayout>

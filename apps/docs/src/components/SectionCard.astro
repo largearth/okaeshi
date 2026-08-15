@@ -1,0 +1,20 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  href: string;
+  links: { label: string; href: string }[];
+}
+
+const { title, description, href, links } = Astro.props;
+---
+
+<section class="section-card">
+  <h2><a href={href}>{title}</a></h2>
+  <p>{description}</p>
+  <ul>
+    {links.map((link) => (
+      <li><a href={link.href}>{link.label}</a></li>
+    ))}
+  </ul>
+</section>

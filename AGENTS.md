@@ -21,15 +21,15 @@
 
 ## Code Quality
 
-- ローカル確認、Git Hooks、CI、テスト運用の詳細は [docs/development/README.md](/Users/maichi/Desktop/money-app/docs/development/README.md) を参照する。
-- 仕様書は `docs/` 直下、開発ルールは `docs/development/` にまとめる。
+- ローカル確認、Git Hooks、CI、テスト運用の詳細は [Development Docs](/Users/maichi/Desktop/money-app/apps/docs/src/content/development/index.md) を参照する。
+- 仕様書・設計資料・開発ルールは `apps/docs/src/content/` にまとめ、ブラウザでは Docs アプリから確認する。
 
 ## Planning
 
 - 実装 Plan は `.plans/` 配下のローカル一時ファイルとして管理する。
 - `.plans/` は Git 管理しない。
 - 実装完了後に最終版の Plan を GitHub Issue として保存する。
-- 詳細な運用は [docs/development/planning-workflow.md](/Users/maichi/Desktop/money-app/docs/development/planning-workflow.md) を参照する。
+- 詳細な運用は [Planning Workflow](/Users/maichi/Desktop/money-app/apps/docs/src/content/development/planning-workflow.md) を参照する。
 
 ## プルリクエスト
 
