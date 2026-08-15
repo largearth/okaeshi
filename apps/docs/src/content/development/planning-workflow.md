@@ -1,3 +1,9 @@
+---
+title: Planning Workflow
+description: Plan、Issue、Pull Request をつなぐ実装フロー
+order: 2
+---
+
 # Planning Workflow
 
 ## Overview

@@ -1,0 +1,39 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+
+const entities = [
+  ["Group", "メンバー・財布・支払い・請求を共有する単位"],
+  ["User", "グループに所属する利用者"],
+  ["GroupMember", "ユーザーとグループの所属・ロール"],
+  ["Wallet", "支払元・返済先となるお金の保有単位"],
+  ["Payment", "財布からの支出事実"],
+  ["Allocation", "支払いに対する各ユーザーの負担額"],
+  ["Claim", "ユーザーから財布への返済依頼"],
+  ["ClaimItem", "請求に含まれる支払いの内訳"],
+  ["Activity", "グループ内の操作履歴"],
+];
+---
+
+<DocsLayout title="Database" description="主要エンティティとドメイン制約">
+  <article class="document">
+    <p class="eyebrow">ARCHITECTURE</p>
+    <h1>Database</h1>
+    <p class="lead">請求は支払いから独立した集約とし、複数の支払いをまとめられるようにします。</p>
+    <div class="entity-grid" aria-label="主要エンティティ">
+      {entities.map(([name, description]) => <div class="entity"><strong>{name}</strong><span>{description}</span></div>)}
+    </div>
+    <div class="relationship-list">
+      <p><strong>Group</strong> は GroupMember、Wallet、Payment、Claim、Activity を管理します。User は GroupMember を通じて所属します。</p>
+      <p><strong>Payment</strong> は Allocation を持ち、<strong>ClaimItem</strong> を通じて Claim に含まれます。</p>
+      <p><strong>Claim</strong> は請求対象 User、返済先 Wallet、複数の ClaimItem を持ちます。</p>
+    </div>
+    <h2>守る制約</h2>
+    <ol>
+      <li>支払いは必ず1つの財布から行います。</li>
+      <li>Allocation の合計額は Payment の金額と一致します。</li>
+      <li>返済元財布・返済方法は管理しません。</li>
+      <li>削除は原則として論理削除で管理します。</li>
+      <li>メンバー脱退後も、過去の支払い・請求・アクティビティを保持します。</li>
+    </ol>
+  </article>
+</DocsLayout>

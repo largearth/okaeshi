@@ -1,3 +1,9 @@
+---
+title: ローカル検証手順
+description: コミット前に行う共通の確認手順
+order: 3
+---
+
 # ローカル検証手順
 
 ## 目的
@@ -34,5 +40,5 @@
 - `format` はリポジトリ全体に対して実行できる
 - `lint-staged` はステージされたファイルだけを対象にする
 - `test` は現時点では環境未整備のため対象外
-- テスト運用の詳細は [./test-operations.md](./test-operations.md) を参照する
+- テスト運用の詳細は [テスト運用](/development/test-operations) を参照する
 - `pnpm build` で Next の開発キャッシュ由来の型エラーが出る場合は、`apps/frontend/.next` を消してから再実行する
