@@ -6,17 +6,26 @@
     "build": "wrangler deploy --dry-run --outdir dist",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:check": "drizzle-kit check",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.13.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "typescript": "^5",
     "typescript-eslint": "^8.66.0",
+    "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   }
 }

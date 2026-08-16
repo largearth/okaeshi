@@ -1,0 +1,5 @@
+# Use a direct Neon connection string when running Drizzle migrations locally.
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
+
+# Set to development for local Worker execution.
+ENVIRONMENT="development"

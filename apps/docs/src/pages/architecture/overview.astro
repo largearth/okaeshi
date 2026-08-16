@@ -24,21 +24,22 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
       <dt>API</dt><dd>認証・認可、入力検証、業務ルール、トランザクション整合性を保証します。</dd>
       <dt>Database</dt><dd>グループ、財布、出金、負担、請求、履歴を永続化します。</dd>
     </dl>
-    <p><a href="/architecture/database">データベース設計を見る</a></p>
-    <h2>採用技術</h2>
-    <ul>
-      <li>モノレポ: pnpm Workspaces / Turborepo</li>
-      <li>Frontend: Vite / React / TypeScript</li>
-      <li>Backend: Hono / TypeScript / Cloudflare Workers</li>
-      <li>Database: Neon / PostgreSQL / Drizzle ORM</li>
-      <li>Hosting: Cloudflare</li>
-    </ul>
-    <p>モノレポにより Web と API を一つのリポジトリで管理し、必要になった段階で shared、validation、config などの package を追加します。</p>
+    <p>
+      <a href="/architecture/database">データベース設計を見る</a>
+      /
+      <a href="/architecture/technology-stack">技術スタックを見る</a>
+    </p>
+    <h2>技術スタック</h2>
+    <p>
+      全体構成と、フロントエンド・バックエンドの個別技術は
+      <a href="/architecture/technology-stack">技術スタック</a>
+      で管理します。導入済みの技術と、実装時に導入する予定の技術を分けて確認できます。
+    </p>
     <h2>開発方針</h2>
     <ol>
       <li><strong>プロトタイプファースト:</strong> 画面を作って操作し、仕様を継続的に更新します。</li>
       <li><strong>MVP 優先:</strong> 出金登録から精算までの流れを先に成立させます。</li>
-      <li><strong>バックエンドは後から:</strong> API、DB、認証、永続化はプロトタイプで仕様を確認してから実装します。</li>
+      <li><strong>段階的に接続:</strong> API、DB、認証、永続化は、画面で仕様を確認しながら段階的に実装します。</li>
     </ol>
     <h2>初期画面と責務</h2>
     <p>Dashboard、Activity、Withdrawals、Claims、Wallets、Members、Group Settings を初期画面とし、画面構成はプロトタイプの検証に応じて変えます。Frontend は UI・操作・API 通信、Backend は業務ロジック・ドメインルール・整合性、Database は永続化を担当します。</p>
