@@ -13,12 +13,12 @@ const tables = [
   },
   {
     name: "users",
-    description: "Google OAuth で認証する、事前登録済みの利用者",
+    description: "アプリを利用する人の基本情報",
     columns: [
       ["id", "uuid", "PK"],
       ["name", "text", "NOT NULL"],
       ["email", "text", "NOT NULL, UNIQUE（小文字で保存）"],
-      ["google_subject", "text", "UNIQUE / 初回ログイン後に設定"],
+      ["email_verified", "boolean", "NOT NULL"],
       ["avatar_url", "text", "NULL"],
       ["created_at / updated_at", "timestamptz", "NOT NULL"],
     ],
@@ -156,7 +156,7 @@ const diagramTables = [
       ["id", "uuid", "PK"],
       ["name", "text"],
       ["email", "text"],
-      ["google_subject", "text"],
+      ["email_verified", "boolean"],
       ["created_at", "timestamptz"],
     ],
   },
@@ -291,11 +291,6 @@ const diagramRelations = [
       <dd>
         Drizzle ORM を使用し、PostgreSQL
         のスキーマ定義、マイグレーション、型安全な DB アクセスを一元管理します。
-      </dd>
-      <dt>Authentication</dt>
-      <dd>
-        Google OAuth を使用します。利用者は <code>users</code>
-        に事前登録し、登録済みアカウントだけがログインできる形にします。
       </dd>
       <dt>Member limit</dt>
       <dd>初期データは2人ですが、スキーマ上のメンバー数上限は設けません。</dd>
@@ -487,7 +482,8 @@ const diagramRelations = [
         <code>claim_items(allocation_id)</code> の一意制約による同じ負担の二重請求防止
       </li>
       <li>
-        <code>users.email</code> と <code>users.google_subject</code> の一意制約。メールアドレスは小文字へ正規化して保存する
+        <code>users.email</code> の一意制約。メールアドレスは小文字へ正規化して保存する。パスワードハッシュは
+        User に紐づく Better Auth の認証用 <code>accounts</code> テーブルに保存する
       </li>
       <li>
         <code>withdrawals.wallet_id</code> と <code>claims.wallet_id</code> は <code
@@ -516,57 +512,7 @@ const diagramRelations = [
         ClaimItem の合計額と Claim 金額の一致、および関連する Claim
         がすべて精算済みになった Withdrawal だけを <code>settled</code> にすること
       </li>
-      <li>
-        Google ID トークンの署名、発行元、OAuth クライアント ID、<code
-          >email_verified</code
-        > を検証し、既存 User のみを認証すること
-      </li>
     </ul>
-
-    <h2>初期ユーザーと Google OAuth</h2>
-    <p>
-      本アプリは自分たち専用のため、公開登録・招待フローは設けません。初回のスキーマ投入時に、2人の
-      User と共有 Group、その Group への所属を作成します。
-    </p>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>データ</th><th>初期投入</th><th>目的</th></tr></thead>
-        <tbody>
-          <tr
-            ><td><code>users</code></td><td
-              >2人の表示名と Google メールアドレス</td
-            ><td>ログインを許可するアカウントを限定する</td></tr
-          >
-          <tr
-            ><td><code>groups</code></td><td>共有 Group を1件</td><td
-              >家計・精算データの共有単位を作る</td
-            ></tr
-          >
-          <tr
-            ><td><code>group_members</code></td><td
-              >各 User と共有 Group の組み合わせを2件</td
-            ><td>ログイン直後から同じ Group を参照できるようにする</td></tr
-          >
-        </tbody>
-      </table>
-    </div>
-    <ol>
-      <li>Google OAuth の ID トークンを検証する。</li>
-      <li>
-        <code>google_subject</code> が設定済みなら、その User としてログインする。
-      </li>
-      <li>
-        未設定の場合だけ、検証済みメールアドレスが初期登録済みの <code
-          >users.email</code
-        > と一致するか確認する。
-      </li>
-      <li>
-        一致した User に Google の不変識別子である <code>sub</code> を <code
-          >google_subject</code
-        > として保存し、以降は <code>sub</code> で識別する。
-      </li>
-      <li>いずれにも一致しない Google アカウントはログインを拒否する。</li>
-    </ol>
 
     <h2>状態</h2>
     <h3>Withdrawal</h3>
