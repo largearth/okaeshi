@@ -2,13 +2,16 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
+  accounts,
   activities,
   allocations,
   claimItems,
   claims,
   groupMembers,
   groups,
+  sessions,
   users,
+  verifications,
   wallets,
   withdrawals,
 } from "./schema";
@@ -16,6 +19,9 @@ import {
 const tables = [
   groups,
   users,
+  sessions,
+  accounts,
+  verifications,
   groupMembers,
   wallets,
   withdrawals,
@@ -30,6 +36,9 @@ describe("database schema", () => {
     expect(tables.map((table) => getTableConfig(table).name)).toEqual([
       "groups",
       "users",
+      "sessions",
+      "accounts",
+      "verifications",
       "group_members",
       "wallets",
       "withdrawals",
@@ -59,6 +68,21 @@ describe("database schema", () => {
     expect(
       claimItemConfig.uniqueConstraints.map((constraint) => constraint.name),
     ).toEqual(["claim_items_allocation_id_key"]);
+    expect(
+      userConfig.columns.find((column) => column.name === "email_verified"),
+    ).toBeDefined();
+  });
+
+  it("adds the Better Auth account and session constraints", () => {
+    const sessionConfig = getTableConfig(sessions);
+    const accountConfig = getTableConfig(accounts);
+
+    expect(
+      sessionConfig.columns.find((column) => column.name === "token"),
+    ).toBeDefined();
+    expect(
+      accountConfig.uniqueConstraints.map((constraint) => constraint.name),
+    ).toEqual(["accounts_provider_id_account_id_key"]);
   });
 
   it("adds indexes for the documented list and timeline queries", () => {

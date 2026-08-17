@@ -1,8 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { authClient } from "../auth-client";
 import { Heading, Screen } from "../components/layout";
 import { Avatar, Card, Icon } from "../components/ui";
 
 export function MypagePage() {
+  const navigate = useNavigate();
+
+  const signOut = async () => {
+    await authClient.signOut();
+    navigate("/", { replace: true });
+  };
+
   return (
     <Screen active="mypage">
       <Heading
@@ -56,6 +64,13 @@ export function MypagePage() {
           <Icon name="chevron" size={17} />
         </Link>
       </Card>
+      <button
+        type="button"
+        onClick={signOut}
+        className="mt-6 flex h-12 w-full items-center justify-center border border-black text-sm font-bold"
+      >
+        ログアウト
+      </button>
     </Screen>
   );
 }

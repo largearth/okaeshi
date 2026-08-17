@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import { RequireSession } from "./components/RequireSession";
 import { AllocationPage } from "./pages/AllocationPage";
 import { GroupPage } from "./pages/GroupPage";
 import { HomePage } from "./pages/HomePage";
@@ -13,14 +14,16 @@ export function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/records" element={<RecordsPage />} />
-      <Route path="/payments/new" element={<PaymentPage />} />
-      <Route path="/payments/new/allocation" element={<AllocationPage />} />
-      <Route path="/invoices" element={<InvoicesPage />} />
-      <Route path="/mypage" element={<MypagePage />} />
-      <Route path="/wallets" element={<WalletsPage />} />
-      <Route path="/group" element={<GroupPage />} />
+      <Route element={<RequireSession />}>
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/records" element={<RecordsPage />} />
+        <Route path="/payments/new" element={<PaymentPage />} />
+        <Route path="/payments/new/allocation" element={<AllocationPage />} />
+        <Route path="/invoices" element={<InvoicesPage />} />
+        <Route path="/mypage" element={<MypagePage />} />
+        <Route path="/wallets" element={<WalletsPage />} />
+        <Route path="/group" element={<GroupPage />} />
+      </Route>
     </Routes>
   );
 }
