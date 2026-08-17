@@ -18,13 +18,22 @@ const { Content } = await render(entry);
   <article class="document">
     <p class="eyebrow">DEVELOPMENT</p>
     <Content />
+    <a class="environment-guide-link" href="/development/environment-variables">
+      <span>ENVIRONMENT</span>
+      <strong>環境変数の設定ガイド</strong>
+      <small>ログイン ID・パスワード、Neon、seed を図で確認する →</small>
+    </a>
     <ul class="document-list">
-      {documents.filter((document) => document.id !== "index").map((document) => (
-        <li>
-          <a href={`/development/${document.id}`}>{document.data.title}</a>
-          <span>{document.data.description}</span>
-        </li>
-      ))}
+      {
+        documents
+          .filter((document) => document.id !== "index")
+          .map((document) => (
+            <li>
+              <a href={`/development/${document.id}`}>{document.data.title}</a>
+              <span>{document.data.description}</span>
+            </li>
+          ))
+      }
     </ul>
   </article>
 </DocsLayout>

@@ -3,3 +3,20 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
 
 # Set to development for local Worker execution.
 ENVIRONMENT="development"
+
+# Better Auth must use the Worker URL.
+BETTER_AUTH_URL="http://localhost:8787"
+# Generate a high-entropy value with at least 32 characters. Do not commit the real value.
+BETTER_AUTH_SECRET="replace-with-a-secret-of-at-least-32-characters"
+
+# The Vite development server origin. Keep this in Better Auth's trusted origins.
+WEB_ORIGIN="http://localhost:5173"
+
+# Development-only login accounts and initial shared group. Do not add real values to this example.
+SEED_GROUP_NAME="Development household"
+SEED_USER_1_NAME="Development owner"
+SEED_USER_1_EMAIL="owner@example.test"
+SEED_USER_1_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"
+SEED_USER_2_NAME="Development member"
+SEED_USER_2_EMAIL="member@example.test"
+SEED_USER_2_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"

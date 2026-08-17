@@ -1,0 +1,129 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+---
+
+<DocsLayout
+  title="Authentication design"
+  description="ログイン ID とパスワードを使う認証設計"
+>
+  <article class="authentication-document">
+    <p class="eyebrow">ARCHITECTURE / AUTHENTICATION</p>
+    <h1>すぐ使える、<br />パスワード認証</h1>
+    <p class="lead">
+      通常ログインは、<code>users.email</code> をログイン ID として行います。パスワードは
+      Better Auth の認証レコードへハッシュ化して保存し、Google OAuth は使用しません。
+    </p>
+    <p class="authentication-status">
+      実装済み。Google OAuth の provider は削除し、seed
+      済みのメールアドレスとパスワードでログインします。
+    </p>
+
+    <section class="authentication-principles">
+      <div>
+        <strong>iCloud キーチェーン</strong><span
+          >ブラウザが ID・パスワードを保存・自動入力する</span
+        >
+      </div>
+      <div>
+        <strong>ハッシュ化して保存</strong><span
+          >パスワードそのものを DB・ログ・Git に残さない</span
+        >
+      </div>
+      <div>
+        <strong>2人の事前作成アカウント</strong><span
+          >公開サインアップは設けない</span
+        >
+      </div>
+    </section>
+
+    <section class="authentication-map" aria-label="通常ログインの流れ">
+      <div class="authentication-box authentication-box-device">
+        <p>BROWSER / ICLOUD KEYCHAIN</p>
+        <h2>保存済みの<br />ログイン情報</h2>
+        <span>ID・パスワードを自動入力</span>
+        <small>ブラウザのパスワードマネージャ</small>
+      </div>
+      <div class="authentication-arrow" aria-hidden="true">
+        <span>送信</span>→
+      </div>
+      <div class="authentication-box authentication-box-api">
+        <p>BETTER AUTH / API</p>
+        <h2>照合・セッション発行</h2>
+        <span>パスワードハッシュを照合</span>
+        <small>Cookie session</small>
+      </div>
+      <div class="authentication-arrow" aria-hidden="true">
+        <span>利用開始</span>→
+      </div>
+      <div class="authentication-box authentication-box-app">
+        <p>SEISAN</p>
+        <h2>ホーム</h2>
+        <span>すぐ記録する</span>
+        <small>保護された画面</small>
+      </div>
+    </section>
+
+    <section class="authentication-enrollment">
+      <div>
+        <p class="eyebrow">ACCOUNT SETUP</p>
+        <h2>アカウントはあらかじめ作成する</h2>
+        <p>
+          2人分のログイン ID と強いパスワードを seed
+          時に登録します。初回ログインの成功後、Safari
+          にログイン情報を保存します。
+        </p>
+      </div>
+      <ol>
+        <li>
+          <span>01</span><strong>ログイン ID を登録する</strong><small
+            >ユーザーごとに重複しない ID を <code>users</code> に保存する。</small
+          >
+        </li>
+        <li>
+          <span>02</span><strong>パスワードをハッシュ化する</strong><small
+            >強いパスワードを seed 時に受け取り、ハッシュだけを User
+            に紐づく認証レコードへ保存する。</small
+          >
+        </li>
+        <li>
+          <span>03</span><strong>Safari に保存する</strong><small
+            >初回ログイン後の保存確認を承認する。以後は保存済みの
+            ID・パスワードを自動入力できる。</small
+          >
+        </li>
+      </ol>
+    </section>
+
+    <section class="authentication-recovery">
+      <p class="eyebrow">RECOVERY</p>
+      <h2>端末を失ったとき・パスワードを忘れたとき</h2>
+      <div class="authentication-recovery-grid">
+        <div>
+          <strong>保存済みの端末がある</strong><span
+            >iCloud キーチェーンからログイン情報を同期し、必要に応じて Safari
+            に保存する。</span
+          >
+        </div>
+        <div>
+          <strong>ログイン情報を利用できない</strong><span
+            >本人確認後に新しい強いパスワードを発行し、認証レコードを更新して全セッションを失効する。</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <section class="authentication-boundaries">
+      <div class="authentication-avoid">
+        <strong>廃止する</strong><span
+          >Google OAuth、Google の Client ID / Secret、公開サインアップ</span
+        >
+      </div>
+      <div class="authentication-keep">
+        <strong>維持する</strong><span
+          >Better Auth の ID・パスワード認証、Cookie session、事前作成済み
+          User・Group・membership、ログアウトと保護ルート</span
+        >
+      </div>
+    </section>
+  </article>
+</DocsLayout>
