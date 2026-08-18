@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { createAuth, type AuthBindings } from "./auth";
+import { api } from "./api";
 import { createDb, type Database } from "./db/client";
 
 type AppEnvironment = {
@@ -32,6 +33,8 @@ app.use("*", async (c, next) => {
 app.all("/api/auth/*", (c) => {
   return createAuth(c.env).handler(c.req.raw);
 });
+
+app.route("/api", api);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
