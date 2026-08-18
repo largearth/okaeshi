@@ -43,6 +43,17 @@ SEED_USER_2_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"
 
 Web アプリは `apps/web/.env` の `VITE_API_ORIGIN` で API の URL を指定します。開発時の既定値は `http://localhost:8787` です。Web と API が別オリジンの場合、`WEB_ORIGIN` と `VITE_API_ORIGIN` を実際の URL に合わせてください。
 
+## REST API and Swagger UI
+
+業務 API は `/api` 配下の REST API として提供します。Better Auth の `/api/auth/*` はログイン、ログアウト、セッション管理の既存契約であり、互換性を維持するため変更しません。
+
+`pnpm --filter backend dev` で Worker を起動し、Web のログイン画面でログインしたあと、同じブラウザで以下を開いてください。
+
+- OpenAPI 3.0 JSON: `http://localhost:8787/api/openapi.json`
+- Swagger UI: `http://localhost:8787/api/docs`
+
+Swagger UI は Backend と同一オリジンの session cookie を利用します。ログイン後なら、`Try it out` から保護された業務 API を実行できます。金額は安全な JSON 表現のため、円単位の正整数文字列（例: `"2300"`）で送受信します。
+
 `db:seed` は `SEED_*` の2ユーザー、パスワードハッシュ、共有 Group、各 Group membership を冪等に投入します。必須の環境変数がない場合は失敗します。実行前に migration を適用してください。
 
 ## Neon and Cloudflare configuration
