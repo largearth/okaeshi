@@ -22,6 +22,22 @@ export type GroupMember = {
   avatarUrl: string | null;
 };
 
+export type Wallet = {
+  id: string;
+  groupId: string;
+  ownerMemberId: string | null;
+  name: string;
+  ownerType: "personal" | "shared";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateWalletInput = {
+  name: string;
+  ownerType: Wallet["ownerType"];
+  ownerMemberId?: string;
+};
+
 type ErrorResponse = {
   message?: string;
 };
@@ -53,6 +69,27 @@ async function get<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${apiOrigin}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const responseBody = (await response
+      .json()
+      .catch(() => null)) as ErrorResponse | null;
+    throw new ApiRequestError(
+      response.status,
+      responseBody?.message ?? "データの作成に失敗しました。",
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
 export function getCurrentUser() {
   return get<CurrentUser>("/api/me");
 }
@@ -62,4 +99,15 @@ export async function getGroupMembers(groupId: string) {
     `/api/groups/${groupId}/members`,
   );
   return response.members;
+}
+
+export async function getGroupWallets(groupId: string) {
+  const response = await get<{ wallets: Wallet[] }>(
+    `/api/groups/${groupId}/wallets`,
+  );
+  return response.wallets;
+}
+
+export function createGroupWallet(groupId: string, input: CreateWalletInput) {
+  return post<Wallet>(`/api/groups/${groupId}/wallets`, input);
 }
