@@ -16,7 +16,7 @@ type AppEnvironment = {
 
 const app = new Hono<AppEnvironment>();
 
-app.use("/api/auth/*", async (c, next) => {
+app.use("/api/*", async (c, next) => {
   const origin = c.req.header("Origin");
 
   return cors({
