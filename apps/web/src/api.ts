@@ -38,6 +38,28 @@ export type CreateWalletInput = {
   ownerMemberId?: string;
 };
 
+export type Withdrawal = {
+  id: string;
+  groupId: string;
+  walletId: string;
+  purpose: string;
+  amount: string;
+  withdrawnOn: string;
+  note: string | null;
+  status: "unallocated" | "allocated" | "claimed" | "settled";
+  createdAt: string;
+  updatedAt: string;
+  allocations: { memberId: string; amount: string }[];
+};
+
+export type CreateWithdrawalInput = {
+  walletId: string;
+  purpose: string;
+  amount: string;
+  withdrawnOn: string;
+  note?: string | null;
+};
+
 type ErrorResponse = {
   message?: string;
 };
@@ -110,4 +132,18 @@ export async function getGroupWallets(groupId: string) {
 
 export function createGroupWallet(groupId: string, input: CreateWalletInput) {
   return post<Wallet>(`/api/groups/${groupId}/wallets`, input);
+}
+
+export async function getGroupWithdrawals(groupId: string) {
+  const response = await get<{ withdrawals: Withdrawal[] }>(
+    `/api/groups/${groupId}/withdrawals`,
+  );
+  return response.withdrawals;
+}
+
+export function createGroupWithdrawal(
+  groupId: string,
+  input: CreateWithdrawalInput,
+) {
+  return post<Withdrawal>(`/api/groups/${groupId}/withdrawals`, input);
 }
