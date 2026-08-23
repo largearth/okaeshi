@@ -10,6 +10,7 @@ BETTER_AUTH_URL="http://localhost:8787"
 BETTER_AUTH_SECRET="replace-with-a-secret-of-at-least-32-characters"
 
 # The Vite development server origin. Keep this in Better Auth's trusted origins.
+# Production uses the same Worker origin for WEB_ORIGIN and BETTER_AUTH_URL.
 WEB_ORIGIN="http://localhost:5173"
 
 # Development-only login accounts and initial shared group. Do not add real values to this example.

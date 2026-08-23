@@ -171,13 +171,24 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
       <ul>
         <li>
           <strong>DATABASE_URL</strong><span
-            >Worker 用の Neon pooled connection string</span
+            >Worker secret に設定する Neon production branch の pooled connection string</span
           >
         </li>
         <li>
-          <strong>BETTER_AUTH_URL</strong><span>本番 API の HTTPS URL</span>
+          <strong>BETTER_AUTH_URL</strong><span
+            >Worker secret に設定する <code>https://okaeshi-app.daxchx-v1.workers.dev</code></span
+          >
         </li>
-        <li><strong>WEB_ORIGIN</strong><span>本番 Web の HTTPS URL</span></li>
+        <li>
+          <strong>BETTER_AUTH_SECRET</strong><span
+            >Worker secret に設定する 32 文字以上の本番専用ランダム値</span
+          >
+        </li>
+        <li>
+          <strong>WEB_ORIGIN / VITE_API_ORIGIN</strong><span
+            >Web と API を同じ Worker で配信するため、どちらも <code>https://okaeshi-app.daxchx-v1.workers.dev</code></span
+          >
+        </li>
       </ul>
     </section>
 
