@@ -41,7 +41,7 @@ SEED_USER_2_EMAIL="member@example.test"
 SEED_USER_2_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"
 ```
 
-Web アプリは `apps/web/.env` の `VITE_API_ORIGIN` で API の URL を指定します。開発時の既定値は `http://localhost:8787` です。Web と API が別オリジンの場合、`WEB_ORIGIN` と `VITE_API_ORIGIN` を実際の URL に合わせてください。
+Web アプリは `apps/web/.env` の `VITE_API_ORIGIN` で API の URL を指定します。開発時の既定値は `http://localhost:8787` です。本番では Web と API を同じ Worker で配信し、`BETTER_AUTH_URL`、`WEB_ORIGIN`、`VITE_API_ORIGIN` をすべて `https://okaeshi-app.daxchx-v1.workers.dev` に合わせます。
 
 ## REST API and Swagger UI
 
@@ -63,10 +63,22 @@ Neon では `development` ブランチを開発用、`production` ブランチ�
 - migration: 対象ブランチの **direct connection string** をローカルの `.dev.vars` に設定して `db:migrate` を実行する
 - Worker runtime: 対象ブランチの **pooled connection string** を `DATABASE_URL` として設定する
 
-Cloudflare へデプロイする前に、環境ごとに pooled connection string をシークレットとして登録します。
+本番 Worker は `okaeshi-app` で、`https://okaeshi-app.daxchx-v1.workers.dev` に公開します。`wrangler.jsonc` は Web の build output（`apps/web/dist`）を同じ Worker の静的アセットとして配信し、React Router の URL は SPA fallback で `index.html` に解決します。`/api/*` は静的アセットより先に Hono Worker へ渡します。
+
+Cloudflare へデプロイする前に、production Neon の pooled connection string と Better Auth の設定を Worker secret として登録します。secret の値は対話入力し、コマンド引数・Git・ログに含めません。
 
 ```sh
 pnpm --filter backend exec wrangler secret put DATABASE_URL
+pnpm --filter backend exec wrangler secret put BETTER_AUTH_URL
+pnpm --filter backend exec wrangler secret put BETTER_AUTH_SECRET
+```
+
+`BETTER_AUTH_URL` は `https://okaeshi-app.daxchx-v1.workers.dev` を設定します。`DATABASE_URL` は production Neon branch の pooled connection string、`BETTER_AUTH_SECRET` は 32 文字以上の本番専用ランダム値です。`WEB_ORIGIN` と `ENVIRONMENT=production` は `wrangler.jsonc` の非機密 `vars` で設定します。
+
+production build と deploy は以下で実行します。`VITE_API_ORIGIN` は同じ Worker origin として Web bundle に埋め込まれます。
+
+```sh
+pnpm --filter backend deploy
 ```
 
 接続文字列はシークレットです。`.dev.vars`、`.env`、接続文字列を含むログを Git に追加しないでください。
@@ -82,3 +94,4 @@ pnpm --filter backend exec wrangler secret put DATABASE_URL
 - `pnpm --filter backend lint`
 - `pnpm --filter backend typecheck`
 - `pnpm --filter backend build`
+- `pnpm --filter backend deploy`: production Web build を含めて `okaeshi-app` Worker を deploy
