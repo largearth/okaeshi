@@ -1,0 +1,31 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Okaeshi の仕様・設計・開発ルール" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <title>{title} | Okaeshi Docs</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-name" href="/">Okaeshi Docs</a>
+      <nav aria-label="主要ナビゲーション">
+        <a href="/product/overview">Product</a>
+        <a href="/architecture/overview">Architecture</a>
+        <a href="/development">Development</a>
+      </nav>
+    </header>
+    <main><slot /></main>
+  </body>
+</html>

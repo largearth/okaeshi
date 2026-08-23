@@ -1,0 +1,151 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+---
+
+<DocsLayout
+  title="Technology stack"
+  description="Okaeshi の技術スタックと採用状況"
+>
+  <article class="document">
+    <p class="eyebrow">ARCHITECTURE</p>
+    <h1>Technology stack</h1>
+    <p class="lead">
+      技術を責務ごとに確認するため、全体構成・フロントエンド・バックエンドの3つのレイヤーに分けて記載します。
+    </p>
+
+    <h2>採用状況</h2>
+    <dl>
+      <dt>採用済み</dt>
+      <dd>リポジトリに導入済みで、現在の実装が利用している技術です。</dd>
+      <dt>採用予定</dt>
+      <dd>方針として決定済みで、対応する実装の開始時に導入する技術です。</dd>
+    </dl>
+
+    <h2>全体レイヤー</h2>
+    <p>
+      アプリ全体の構成・実行環境・サービス間の通信を扱うレイヤーです。ここでは個別ライブラリではなく、システムとしての役割を確認します。
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>責務</th><th>採用技術・方式</th><th>採用状況</th></tr>
+        </thead>
+        <tbody>
+          <tr
+            ><td>リポジトリ管理</td><td
+              >pnpm Workspaces / Turborepo によるモノレポ</td
+            ><td>採用済み</td></tr
+          >
+          <tr><td>共通言語</td><td>TypeScript</td><td>採用済み</td></tr>
+          <tr
+            ><td>アプリ構成</td><td>ブラウザ向け SPA、REST API、PostgreSQL</td
+            ><td>採用済み</td></tr
+          >
+          <tr
+            ><td>通信形式</td><td>HTTPS / JSON による REST API</td><td
+              >採用予定</td
+            ></tr
+          >
+          <tr><td>実行・配信基盤</td><td>Cloudflare</td><td>採用済み</td></tr>
+          <tr
+            ><td>データベース基盤</td><td
+              >Neon の PostgreSQL。develop / production ブランチで環境を分離</td
+            ><td>採用済み</td></tr
+          >
+        </tbody>
+      </table>
+    </div>
+
+    <h2>フロントエンドレイヤー</h2>
+    <p>
+      画面表示、画面遷移、ユーザー操作、APIとの通信を担います。業務ルールや権限判定の最終判断はバックエンドに置きます。
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>責務</th><th>採用技術・方式</th><th>採用状況</th></tr>
+        </thead>
+        <tbody>
+          <tr
+            ><td>UI アプリケーション</td><td>React / Vite / TypeScript</td><td
+              >採用済み</td
+            ></tr
+          >
+          <tr><td>画面遷移</td><td>React Router</td><td>採用済み</td></tr>
+          <tr><td>スタイリング</td><td>Tailwind CSS</td><td>採用済み</td></tr>
+          <tr><td>アイコン</td><td>Hugeicons</td><td>採用済み</td></tr>
+          <tr
+            ><td>画面内の状態管理</td><td
+              >Zustand。UIの一時状態や、複数画面で共有する表示状態に使用する</td
+            ><td>採用予定</td></tr
+          >
+          <tr
+            ><td>入力値の検証</td><td
+              >Zod。フォーム入力を送信前に検証し、バックエンドと同じルールを共有できる形を目指す</td
+            ><td>採用予定</td></tr
+          >
+          <tr
+            ><td>API 通信</td><td
+              >Cookie を含めた Fetch API による REST API 呼び出し</td
+            ><td>採用予定</td></tr
+          >
+        </tbody>
+      </table>
+    </div>
+
+    <h2>バックエンドレイヤー</h2>
+    <p>
+      認証・認可、入力検証、業務ルール、トランザクション整合性、永続化を担います。フロントエンドから渡された値を信用せず、このレイヤーで最終的に検証します。
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>責務</th><th>採用技術・方式</th><th>採用状況</th></tr>
+        </thead>
+        <tbody>
+          <tr
+            ><td>API フレームワーク</td><td>Hono / TypeScript</td><td
+              >採用済み</td
+            ></tr
+          >
+          <tr><td>実行環境</td><td>Cloudflare Workers</td><td>採用済み</td></tr>
+          <tr
+            ><td>認証・セッション</td><td
+              >Better Auth のログイン
+              ID・パスワード認証。事前作成済みの2アカウントだけをログイン可能にする</td
+            ><td>採用済み</td></tr
+          >
+          <tr
+            ><td>認可</td><td
+              >ログインユーザーとグループ所属・ロールに基づくアクセス制御</td
+            ><td>採用予定</td></tr
+          >
+          <tr
+            ><td>リクエスト検証</td><td
+              >Zod。APIの入力値を検証し、エラー形式を統一する</td
+            ><td>採用予定</td></tr
+          >
+          <tr
+            ><td>データアクセス</td><td
+              >Drizzle ORM / @neondatabase/serverless</td
+            ><td>採用済み</td></tr
+          >
+          <tr
+            ><td>スキーマ・マイグレーション</td><td
+              >Drizzle Kit。マイグレーションは Neon の develop / production
+              にそれぞれ適用する</td
+            ><td>採用済み</td></tr
+          >
+          <tr
+            ><td>テスト</td><td>Vitest。スキーマ・制約・業務ルールを検証する</td
+            ><td>採用済み</td></tr
+          >
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      実装を開始していない採用予定の技術は、導入時に依存関係・環境変数・マイグレーションを追加し、このページの状態を「採用済み」へ更新します。
+    </p>
+  </article>
+</DocsLayout>

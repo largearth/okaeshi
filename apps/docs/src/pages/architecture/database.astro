@@ -1,0 +1,559 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+
+const tables = [
+  {
+    name: "groups",
+    description: "メンバー・財布・出金・請求を共有する単位",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["name", "text", "NOT NULL"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "users",
+    description: "アプリを利用する人の基本情報",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["name", "text", "NOT NULL"],
+      ["email", "text", "NOT NULL, UNIQUE（小文字で保存）"],
+      ["email_verified", "boolean", "NOT NULL"],
+      ["avatar_url", "text", "NULL"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "group_members",
+    description: "ユーザーのグループ所属・ロール・在籍状態",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK → groups"],
+      ["user_id", "uuid", "FK → users"],
+      ["role", "text", "owner | member"],
+      ["status", "text", "active | left"],
+      ["joined_at / left_at", "timestamptz", "NOT NULL / NULL"],
+    ],
+  },
+  {
+    name: "wallets",
+    description: "出金元・返済先となる個人または共有のお金の保有単位",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK → groups"],
+      ["owner_member_id", "uuid", "FK → group_members / NULL"],
+      ["name", "text", "NOT NULL"],
+      ["owner_type", "text", "personal | shared"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "withdrawals",
+    description:
+      "財布から金額を取り出し、用途を記録する。支払い取引そのものは管理しない",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK → groups"],
+      ["wallet_id", "uuid", "FK → wallets"],
+      ["purpose", "text", "NOT NULL"],
+      ["amount", "bigint", "NOT NULL, > 0"],
+      ["withdrawn_on", "date", "NOT NULL"],
+      ["note", "text", "NULL"],
+      ["status", "text", "unallocated | allocated | claimed | settled"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "allocations",
+    description: "出金に対する各メンバーの負担額",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["withdrawal_id", "uuid", "FK → withdrawals"],
+      ["member_id", "uuid", "FK → group_members"],
+      ["amount", "bigint", "NOT NULL, > 0"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "claims",
+    description:
+      "メンバーから出金元財布への返済依頼。Withdrawal とは独立した集約",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK → groups"],
+      ["debtor_member_id", "uuid", "FK → group_members"],
+      ["wallet_id", "uuid", "FK → wallets"],
+      ["amount", "bigint", "NOT NULL, > 0"],
+      ["status", "text", "unsettled | settled"],
+      ["settled_at", "timestamptz", "NULL"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "claim_items",
+    description: "請求に含める負担の内訳。Claim と Allocation を結ぶ",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["claim_id", "uuid", "FK → claims"],
+      ["allocation_id", "uuid", "FK → allocations"],
+      ["amount", "bigint", "NOT NULL, > 0"],
+      ["created_at / updated_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+  {
+    name: "activities",
+    description: "グループ内の操作履歴。タイムライン表示用の記録",
+    columns: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK → groups"],
+      ["actor_member_id", "uuid", "FK → group_members"],
+      ["type", "text", "withdrawal_created など"],
+      ["subject_id", "uuid", "NOT NULL"],
+      ["metadata", "jsonb", "NOT NULL, default {}"],
+      ["created_at", "timestamptz", "NOT NULL"],
+    ],
+  },
+];
+
+const relations = [
+  ["groups", "1 : N", "group_members", "グループの所属メンバー"],
+  ["users", "1 : N", "group_members", "ユーザーは複数グループに所属可能"],
+  ["groups", "1 : N", "wallets", "グループ内の個人・共有財布"],
+  [
+    "groups",
+    "1 : N",
+    "withdrawals / claims / activities",
+    "各業務データの所属先",
+  ],
+  ["wallets", "1 : N", "withdrawals", "出金は1つの財布から行う"],
+  ["withdrawals", "1 : N", "allocations", "出金をメンバーの負担額へ配分"],
+  [
+    "group_members",
+    "1 : N",
+    "allocations / claims / activities",
+    "負担者・請求対象者・操作実行者",
+  ],
+  ["claims", "1 : N", "claim_items", "請求に含まれる内訳"],
+  ["allocations", "0..1 : 1", "claim_items", "1つの負担を1回だけ請求する"],
+];
+
+const diagramTables = [
+  {
+    name: "groups",
+    x: 570,
+    y: 50,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["name", "text"],
+      ["created_at", "timestamptz"],
+    ],
+  },
+  {
+    name: "users",
+    x: 60,
+    y: 300,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["name", "text"],
+      ["email", "text"],
+      ["email_verified", "boolean"],
+      ["created_at", "timestamptz"],
+    ],
+  },
+  {
+    name: "group_members",
+    x: 325,
+    y: 230,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK"],
+      ["user_id", "uuid", "FK"],
+      ["role", "text"],
+      ["status", "text"],
+    ],
+  },
+  {
+    name: "wallets",
+    x: 865,
+    y: 210,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK"],
+      ["owner_member_id", "uuid", "FK / NULL"],
+      ["name", "text"],
+      ["owner_type", "text"],
+    ],
+  },
+  {
+    name: "withdrawals",
+    x: 645,
+    y: 525,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK"],
+      ["wallet_id", "uuid", "FK"],
+      ["purpose", "text"],
+      ["amount", "bigint"],
+      ["withdrawn_on", "date"],
+      ["note", "text"],
+      ["status", "text"],
+    ],
+  },
+  {
+    name: "allocations",
+    x: 915,
+    y: 850,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["withdrawal_id", "uuid", "FK"],
+      ["member_id", "uuid", "FK"],
+      ["amount", "bigint"],
+    ],
+  },
+  {
+    name: "claims",
+    x: 1195,
+    y: 480,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK"],
+      ["debtor_member_id", "uuid", "FK"],
+      ["wallet_id", "uuid", "FK"],
+      ["amount", "bigint"],
+      ["status", "text"],
+    ],
+  },
+  {
+    name: "claim_items",
+    x: 1200,
+    y: 850,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["claim_id", "uuid", "FK"],
+      ["allocation_id", "uuid", "FK"],
+      ["amount", "bigint"],
+    ],
+  },
+  {
+    name: "activities",
+    x: 290,
+    y: 625,
+    rows: [
+      ["id", "uuid", "PK"],
+      ["group_id", "uuid", "FK"],
+      ["actor_member_id", "uuid", "FK"],
+      ["type", "text"],
+      ["subject_id", "uuid"],
+      ["created_at", "timestamptz"],
+    ],
+  },
+];
+
+const diagramRelations = [
+  "M 325 343.5 H 260",
+  "M 425 312.5 V 220 H 520 V 101.5 H 570",
+  "M 1030 292.5 V 180 H 820 V 101.5 H 770",
+  "M 865 323.5 H 800 V 281.5 H 525",
+  "M 720 607.5 V 470 H 550 V 101.5 H 570",
+  "M 820 638.5 H 840 V 450 H 865 V 261.5",
+  "M 1015 932.5 V 840 H 870 V 576.5 H 845",
+  "M 915 963.5 H 590 V 450 H 490 V 421",
+  "M 1295 562.5 V 160 H 820 V 101.5 H 770",
+  "M 1195 593.5 H 1120 V 450 H 580 V 281.5 H 525",
+  "M 1195 624.5 H 1110 V 261.5 H 1065",
+  "M 1400 932.5 H 1430 V 531.5 H 1395",
+  "M 1200 963.5 H 1115",
+  "M 380 707.5 V 460 H 540 V 101.5 H 570",
+  "M 540 738.5 H 580 V 450 H 490 V 421",
+];
+---
+
+<DocsLayout
+  title="Database design"
+  description="Neon PostgreSQL を前提としたデータベース設計"
+>
+  <article class="document database-document">
+    <p class="eyebrow">ARCHITECTURE</p>
+    <h1>Database design</h1>
+    <p class="lead">
+      Neon（PostgreSQL）と Drizzle ORM
+      を前提に、財布からの出金、各メンバーの負担、返済依頼を分離して管理します。
+    </p>
+
+    <h2>運用方針</h2>
+    <dl>
+      <dt>Neon branch</dt>
+      <dd>
+        <code>development</code> ブランチを開発環境、<code>production</code> ブランチを本番環境として使い分けます。開発中のスキーマ変更は
+        production へ直接適用しません。
+      </dd>
+      <dt>ORM</dt>
+      <dd>
+        Drizzle ORM を使用し、PostgreSQL
+        のスキーマ定義、マイグレーション、型安全な DB アクセスを一元管理します。
+      </dd>
+      <dt>Member limit</dt>
+      <dd>初期データは2人ですが、スキーマ上のメンバー数上限は設けません。</dd>
+    </dl>
+
+    <h2>ER 図</h2>
+    <p>
+      テーブルカードの <strong>FK</strong> 行を起点に、親テーブルへつながる線を表示します。出金・負担・請求の関係を、カラムとあわせて確認できます。
+    </p>
+    <div
+      class="er-diagram-scroll"
+      role="region"
+      aria-label="データベースのエンティティ関連図"
+      tabindex="0"
+    >
+      <svg
+        class="er-schema"
+        viewBox="0 0 1500 1100"
+        role="img"
+        aria-label="groups、users、group members、wallets、withdrawals、allocations、claims、claim items、activities の関係図"
+      >
+        <defs>
+          <marker
+            id="relationship-arrow"
+            markerWidth="7"
+            markerHeight="7"
+            refX="6"
+            refY="3.5"
+            orient="auto"
+          >
+            <path d="M 0 0 L 7 3.5 L 0 7 z"></path>
+          </marker>
+        </defs>
+        <g class="er-relationships" aria-hidden="true">
+          {
+            diagramRelations.map((path) => (
+              <path d={path} marker-end="url(#relationship-arrow)" />
+            ))
+          }
+        </g>
+        {
+          diagramTables.map((table) => (
+            <g
+              class="er-table-card"
+              transform={`translate(${table.x} ${table.y})`}
+            >
+              <rect
+                class="er-table-shadow"
+                x="3"
+                y="4"
+                width="200"
+                height={36 + table.rows.length * 31}
+                rx="2"
+              />
+              <rect class="er-table-header" width="200" height="36" rx="2" />
+              <text class="er-table-title" x="13" y="23">
+                {table.name}
+              </text>
+              {table.rows.map(([name, type, marker], index) => (
+                <g transform={`translate(0 ${36 + index * 31})`}>
+                  <rect class="er-table-row" width="200" height="31" />
+                  <text
+                    class:list={[
+                      "er-table-column",
+                      { "er-table-key": marker === "PK" },
+                    ]}
+                    x="13"
+                    y="20"
+                  >
+                    {name}
+                  </text>
+                  {marker && (
+                    <text class="er-table-marker" x="119" y="20">
+                      {marker}
+                    </text>
+                  )}
+                  <text class="er-table-type" x="187" y="20" text-anchor="end">
+                    {type}
+                  </text>
+                </g>
+              ))}
+            </g>
+          ))
+        }
+      </svg>
+    </div>
+
+    <div class="relationship-list">
+      <p>
+        <strong>所属:</strong> User と Group は GroupMember で結びます。履歴を保持するため、脱退後も
+        GroupMember を残します。
+      </p>
+      <p>
+        <strong>請求:</strong> Claim は請求対象メンバーと返済先 Wallet を持ち、ClaimItem
+        で Allocation をまとめます。
+      </p>
+      <p>
+        <strong>履歴:</strong> Activity は対象 ID と表示用スナップショットを保持し、削除・変更後もタイムラインを表示できるようにします。
+      </p>
+    </div>
+
+    <h2>リレーション一覧</h2>
+    <div class="table-scroll">
+      <table>
+        <thead
+          ><tr><th>親</th><th>多重度</th><th>子</th><th>意味</th></tr></thead
+        >
+        <tbody
+          >{
+            relations.map(([parent, cardinality, child, description]) => (
+              <tr>
+                <>
+                  <td>
+                    <code>{parent}</code>
+                  </td>
+                  <td>{cardinality}</td>
+                  <td>
+                    <code>{child}</code>
+                  </td>
+                  <td>{description}</td>
+                </>
+              </tr>
+            ))
+          }</tbody
+        >
+      </table>
+    </div>
+
+    <h2>テーブル定義案</h2>
+    <p>
+      型は PostgreSQL の型で記載しています。実装時は Drizzle
+      のスキーマ定義とマイグレーションから Neon の各ブランチへ適用します。
+    </p>
+    {
+      tables.map((table) => (
+        <section class="schema-table">
+          <h3>
+            <code>{table.name}</code>
+          </h3>
+          <p>{table.description}</p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <>
+                    <th>カラム</th>
+                    <th>型</th>
+                    <th>制約・用途</th>
+                  </>
+                </tr>
+              </thead>
+              <tbody>
+                {table.columns.map(([column, type, constraint]) => (
+                  <tr>
+                    <td>
+                      <code>{column}</code>
+                    </td>
+                    <td>
+                      <code>{type}</code>
+                    </td>
+                    <td>{constraint}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ))
+    }
+
+    <h2>制約と整合性</h2>
+    <h3>PostgreSQL で担保するもの</h3>
+    <ul>
+      <li>
+        主キー、外部キー、必須値、金額の正数チェック、状態値の <code>CHECK</code
+        > 制約
+      </li>
+      <li>
+        <code>group_members(group_id, user_id)</code> と <code
+          >allocations(withdrawal_id, member_id)</code
+        > の重複防止
+      </li>
+      <li>
+        個人財布は <code>owner_member_id</code> を必須、共有財布は NULL とする <code
+          >owner_type</code
+        > との整合性
+      </li>
+      <li>
+        <code>claim_items(allocation_id)</code> の一意制約による同じ負担の二重請求防止
+      </li>
+      <li>
+        <code>users.email</code> の一意制約。メールアドレスは小文字へ正規化して保存する。パスワードハッシュは
+        User に紐づく Better Auth の認証用 <code>accounts</code> テーブルに保存する
+      </li>
+      <li>
+        <code>withdrawals.wallet_id</code> と <code>claims.wallet_id</code> は <code
+          >ON DELETE RESTRICT</code
+        > とし、出金記録または請求が参照する財布の削除を拒否する
+      </li>
+    </ul>
+
+    <h2>財布の削除</h2>
+    <p>
+      財布に無効状態は設けません。出金・請求から参照されていない財布だけを削除できます。
+      参照中の財布を削除しようとした場合は、PostgreSQL
+      の外部キー制約によって処理を失敗させ、出金記録と請求の履歴を保護します。
+    </p>
+    <h3>トランザクション内で検証するもの</h3>
+    <ul>
+      <li>Allocation の合計額と Withdrawal 金額の一致</li>
+      <li>
+        Withdrawal、Wallet、Allocation、Claim のメンバーが同じ Group
+        に属すること
+      </li>
+      <li>
+        個人財布からの出金では所有者以外の負担だけを請求すること、共有財布からの出金では各負担者へ請求すること
+      </li>
+      <li>
+        ClaimItem の合計額と Claim 金額の一致、および関連する Claim
+        がすべて精算済みになった Withdrawal だけを <code>settled</code> にすること
+      </li>
+    </ul>
+
+    <h2>状態</h2>
+    <h3>Withdrawal</h3>
+    <div class="state-flow">
+      <span>unallocated</span><b>→</b><span>allocated</span><b>→</b><span
+        >claimed</span
+      ><b>→</b><span>settled</span>
+    </div>
+    <p>請求を生成しない出金は <code>allocated</code> のままにします。</p>
+    <h3>Claim</h3>
+    <div class="state-flow">
+      <span>unsettled</span><b>→</b><span>settled</span>
+    </div>
+    <p>
+      返済元財布と返済方法は管理せず、返済先である Wallet
+      と精算完了時刻だけを記録します。
+    </p>
+
+    <h2>アクセスパターンとインデックス案</h2>
+    <ul>
+      <li>
+        グループ内の出金一覧: <code
+          >withdrawals(group_id, withdrawn_on DESC)</code
+        >
+      </li>
+      <li>
+        未精算請求: <code
+          >claims(debtor_member_id, status, created_at DESC)</code
+        >
+      </li>
+      <li>返済先財布ごとの請求: <code>claims(wallet_id, status)</code></li>
+      <li>
+        グループのタイムライン: <code
+          >activities(group_id, created_at DESC)</code
+        >
+      </li>
+      <li>
+        出金の負担・請求内訳: <code>allocations(withdrawal_id)</code>、<code
+          >claim_items(claim_id)</code
+        >
+      </li>
+    </ul>
+  </article>
+</DocsLayout>

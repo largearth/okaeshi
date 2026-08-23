@@ -3,15 +3,36 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "build": "wrangler deploy --dry-run",
+    "build": "pnpm --filter web build:production && wrangler deploy --dry-run --outdir dist",
+    "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "deploy": "wrangler deploy --minify",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:check": "drizzle-kit check",
+    "db:seed": "tsx src/db/seed.ts",
+    "deploy": "pnpm --filter web build:production && wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
-    "hono": "^4.13.1"
+    "@better-auth/drizzle-adapter": "^1.6.29",
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-openapi": "^1.6.0",
+    "@neondatabase/serverless": "^1.1.0",
+    "better-auth": "^1.6.29",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "tsx": "^4.23.12",
+    "typescript": "^5",
+    "typescript-eslint": "^8.66.0",
+    "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   }
 }

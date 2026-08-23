@@ -1,0 +1,211 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+---
+
+<DocsLayout
+  title="環境変数の設定"
+  description="ログイン ID・パスワード、Neon、seed の設定を一画面で確認する"
+>
+  <article class="environment-guide">
+    <p class="eyebrow">DEVELOPMENT / ENVIRONMENT</p>
+    <h1>ログインできるまでの<br />設定マップ</h1>
+    <p class="lead">
+      設定する場所と値のつながりを、上から順に確認します。秘密値は Git
+      やチャットへ保存しません。
+    </p>
+    <p class="environment-status">
+      ID・パスワード認証の設定です。Google OAuth 用の環境変数は使用しません。
+    </p>
+
+    <section class="environment-flow" aria-label="ローカル開発の設定順">
+      <div class="environment-step">
+        <span>1</span>
+        <strong>ログイン情報</strong>
+        <small>seed 時に登録</small>
+      </div>
+      <b aria-hidden="true">→</b>
+      <div class="environment-step">
+        <span>2</span>
+        <strong>.dev.vars</strong>
+        <small>Backend の設定</small>
+      </div>
+      <b aria-hidden="true">→</b>
+      <div class="environment-step">
+        <span>3</span>
+        <strong>db:seed</strong>
+        <small>許可ユーザーを登録</small>
+      </div>
+      <b aria-hidden="true">→</b>
+      <div class="environment-step">
+        <span>4</span>
+        <strong>パスワードログイン</strong>
+        <small>Safari が自動入力</small>
+      </div>
+    </section>
+
+    <section class="environment-diagram" aria-label="環境変数の対応関係">
+      <div class="environment-node environment-node-google">
+        <p class="environment-node-label">INITIAL CREDENTIALS</p>
+        <h2>ログイン ID とパスワード</h2>
+        <dl>
+          <div><dt>ユーザー 1</dt><dd>SEED_USER_1_EMAIL / PASSWORD</dd></div>
+          <div><dt>ユーザー 2</dt><dd>SEED_USER_2_EMAIL / PASSWORD</dd></div>
+          <div>
+            <dt>DB 保存</dt><dd>
+              users.email と認証レコードのパスワードハッシュ
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div
+        class="environment-connector environment-connector-google"
+        aria-hidden="true"
+      >
+        <span>seed でハッシュ化して登録</span><b>↓</b>
+      </div>
+
+      <div class="environment-node environment-node-backend">
+        <p class="environment-node-label">APPS / BACKEND / .DEV.VARS</p>
+        <h2>Better Auth + Password</h2>
+        <dl>
+          <div>
+            <dt>API URL</dt><dd>BETTER_AUTH_URL = http://localhost:8787</dd>
+          </div>
+          <div>
+            <dt>Session secret</dt><dd>
+              BETTER_AUTH_SECRET = 32文字以上のランダム値
+            </dd>
+          </div>
+          <div>
+            <dt>Web origin</dt><dd>WEB_ORIGIN = http://localhost:5173</dd>
+          </div>
+          <div>
+            <dt>Migration / seed</dt><dd>
+              DATABASE_URL = Neon direct connection string
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div
+        class="environment-connector environment-connector-web"
+        aria-hidden="true"
+      >
+        <span>接続</span><b>↓</b>
+      </div>
+
+      <div class="environment-node environment-node-web">
+        <p class="environment-node-label">APPS / WEB / .ENV</p>
+        <h2>Vite</h2>
+        <dl>
+          <div>
+            <dt>API origin</dt><dd>VITE_API_ORIGIN = http://localhost:8787</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="environment-setup">
+      <div>
+        <p class="eyebrow">ONE-TIME SETUP</p>
+        <h2>最初の設定</h2>
+      </div>
+      <ol>
+        <li>
+          <span>01</span><div>
+            <strong>強いパスワードを生成する</strong><code
+              >openssl rand -base64 24</code
+            ><small
+              >ユーザーごとに別の値を作る。実値は
+              Git・ログ・チャットへ残さない。</small
+            >
+          </div>
+        </li>
+        <li>
+          <span>02</span><div>
+            <strong>ログイン情報をローカル設定へ入れる</strong><code
+              >SEED_USER_1_EMAIL=&quot;&lt;email-address&gt;&quot;</code
+            ><code
+              >SEED_USER_1_PASSWORD=&quot;&lt;strong-password&gt;&quot;</code
+            >
+          </div>
+        </li>
+        <li>
+          <span>03</span><div>
+            <strong>ローカルファイルを作成</strong><code
+              >cp apps/backend/.dev.vars.example apps/backend/.dev.vars</code
+            ><code>cp apps/web/.env.example apps/web/.env</code>
+          </div>
+        </li>
+        <li>
+          <span>04</span><div>
+            <strong>シークレットを生成して設定</strong><code
+              >openssl rand -base64 32</code
+            ><small>出力を <code>BETTER_AUTH_SECRET</code> に設定する。</small>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="environment-run">
+      <p class="eyebrow">RUN IN THIS ORDER</p>
+      <div class="environment-command-grid">
+        <code>pnpm --filter backend db:migrate</code>
+        <code>pnpm --filter backend db:seed</code>
+        <code>pnpm --filter backend dev</code>
+        <code>pnpm --filter web dev</code>
+      </div>
+      <p>
+        <code>SEED_USER_1_EMAIL</code> と <code>SEED_USER_2_EMAIL</code> に設定した
+        <code>db:seed</code> で作成した2 User だけがログインできます。初回ログイン後に
+        Safari の保存確認を承認すると、次回から ID・パスワードを自動入力できます。
+      </p>
+    </section>
+
+    <section class="environment-production">
+      <div>
+        <p class="eyebrow">CLOUDFLARE / PRODUCTION</p>
+        <h2>本番では URL と接続先を切り替える</h2>
+      </div>
+      <ul>
+        <li>
+          <strong>DATABASE_URL</strong><span
+            >Worker secret に設定する Neon production branch の pooled connection string</span
+          >
+        </li>
+        <li>
+          <strong>BETTER_AUTH_URL</strong><span
+            >Worker secret に設定する <code>https://okaeshi-app.daxchx-v1.workers.dev</code></span
+          >
+        </li>
+        <li>
+          <strong>BETTER_AUTH_SECRET</strong><span
+            >Worker secret に設定する 32 文字以上の本番専用ランダム値</span
+          >
+        </li>
+        <li>
+          <strong>WEB_ORIGIN / VITE_API_ORIGIN</strong><span
+            >Web と API を同じ Worker で配信するため、どちらも <code>https://okaeshi-app.daxchx-v1.workers.dev</code></span
+          >
+        </li>
+      </ul>
+      <p>
+        migration と seed は Worker 用の pooled connection string ではなく、production Neon branch
+        の direct connection string を Git 管理外の
+        <code>apps/backend/.dev.vars.production</code> に設定して実行します。実行時は
+        <code>OKAESHI_ENV_FILE=.dev.vars.production</code> を指定し、development 用
+        <code>.dev.vars</code> と取り違えません。
+      </p>
+    </section>
+
+    <aside class="environment-rule">
+      <strong>変更時のルール</strong>
+      <span
+        >環境変数を追加・変更・削除するときは、このガイド、対応する <code
+          >*.example</code
+        >、README を同じ変更で更新する。</span
+      >
+    </aside>
+  </article>
+</DocsLayout>

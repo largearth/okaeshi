@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Arial, "Helvetica Neue", "Noto Sans JP", sans-serif;
+  --color-accent: #00b957;
+}
+
+@layer base {
+  body {
+    @apply m-0 min-w-80 bg-white text-black;
+  }
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+}
