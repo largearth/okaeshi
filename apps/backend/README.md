@@ -99,7 +99,13 @@ pnpm --filter backend exec wrangler secret put BETTER_AUTH_SECRET
 production build と deploy は以下で実行します。`VITE_API_ORIGIN` は同じ Worker origin として Web bundle に埋め込まれます。
 
 ```sh
-pnpm --filter backend deploy
+pnpm --filter backend run deploy
+```
+
+`wrangler.jsonc` では Worker observability を有効にしています。デプロイ後のエラーやリクエストログは Cloudflare dashboard の `okaeshi-app` Worker で確認し、CLI では次のコマンドでリアルタイムに確認できます。
+
+```sh
+pnpm --filter backend exec wrangler tail okaeshi-app
 ```
 
 接続文字列はシークレットです。`.dev.vars`、`.env`、接続文字列を含むログを Git に追加しないでください。
@@ -115,4 +121,4 @@ pnpm --filter backend deploy
 - `pnpm --filter backend lint`
 - `pnpm --filter backend typecheck`
 - `pnpm --filter backend build`
-- `pnpm --filter backend deploy`: production Web build を含めて `okaeshi-app` Worker を deploy
+- `pnpm --filter backend run deploy`: production Web build を含めて `okaeshi-app` Worker を deploy

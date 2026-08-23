@@ -20,7 +20,7 @@ Web の production build は Backend の deploy command から実行します。
 `VITE_API_ORIGIN` に同じ Worker origin を埋め込むため、別 origin の Cookie を使いません。
 
 ```sh
-pnpm --filter backend deploy
+pnpm --filter backend run deploy
 ```
 
 Cloudflare への公開前に、Backend の `DATABASE_URL`、`BETTER_AUTH_URL`、
