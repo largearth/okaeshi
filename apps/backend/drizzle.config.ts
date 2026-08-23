@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
-config({ path: ".dev.vars" });
+config({ path: process.env.OKAESHI_ENV_FILE ?? ".dev.vars" });
 
 export default defineConfig({
   dialect: "postgresql",

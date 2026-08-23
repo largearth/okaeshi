@@ -5,7 +5,7 @@ import { hashPassword } from "better-auth/crypto";
 import { createDb } from "./client";
 import { accounts, groupMembers, groups, users } from "./schema";
 
-config({ path: ".dev.vars" });
+config({ path: process.env.OKAESHI_ENV_FILE ?? ".dev.vars" });
 
 const required = (value: string | undefined, name: string) => {
   if (!value) {
