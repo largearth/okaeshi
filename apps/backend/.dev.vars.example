@@ -1,4 +1,6 @@
 # Use a direct Neon connection string when running Drizzle migrations locally.
+# Set OKAESHI_ENV_FILE=.dev.vars.production when loading a separate, ignored
+# production configuration file for migration or seed commands.
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
 
 # Set to development for local Worker execution.

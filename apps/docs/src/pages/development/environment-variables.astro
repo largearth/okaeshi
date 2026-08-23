@@ -190,6 +190,13 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
           >
         </li>
       </ul>
+      <p>
+        migration と seed は Worker 用の pooled connection string ではなく、production Neon branch
+        の direct connection string を Git 管理外の
+        <code>apps/backend/.dev.vars.production</code> に設定して実行します。実行時は
+        <code>OKAESHI_ENV_FILE=.dev.vars.production</code> を指定し、development 用
+        <code>.dev.vars</code> と取り違えません。
+      </p>
     </section>
 
     <aside class="environment-rule">

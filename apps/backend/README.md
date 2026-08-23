@@ -63,6 +63,27 @@ Neon では `development` ブランチを開発用、`production` ブランチ�
 - migration: 対象ブランチの **direct connection string** をローカルの `.dev.vars` に設定して `db:migrate` を実行する
 - Worker runtime: 対象ブランチの **pooled connection string** を `DATABASE_URL` として設定する
 
+### Production migration and seed
+
+production の接続情報と初期ユーザーを development 用 `.dev.vars` と混在させないため、
+`apps/backend/.dev.vars.production` を Git 管理外で作成します。このファイルには production
+Neon branch の **direct connection string**、`ENVIRONMENT=production`、本番 Better Auth URL、
+実利用する 2 人の `SEED_*` を設定します。`.dev.vars.*` は Git に追加しません。
+
+`OKAESHI_ENV_FILE` で読込ファイルを明示してから、必ず次の順番で実行します。
+
+```sh
+OKAESHI_ENV_FILE=.dev.vars.production pnpm --filter backend db:check
+OKAESHI_ENV_FILE=.dev.vars.production pnpm --filter backend db:migrate
+OKAESHI_ENV_FILE=.dev.vars.production pnpm --filter backend db:seed
+```
+
+`db:seed` は email をキーに User の名前・認証レコードのパスワードハッシュ・Group membership
+を更新します。同じ `SEED_USER_*` を再実行するとパスワードも上書きされるため、パスワード変更を
+意図しない限り再実行しません。migration と seed の完了後は、Neon console の read-only query
+で migration 履歴、`users`、`accounts`、`groups`、`group_members`、`wallets`、`withdrawals`
+を確認します。
+
 本番 Worker は `okaeshi-app` で、`https://okaeshi-app.daxchx-v1.workers.dev` に公開します。`wrangler.jsonc` は Web の build output（`apps/web/dist`）を同じ Worker の静的アセットとして配信し、React Router の URL は SPA fallback で `index.html` に解決します。`/api/*` は静的アセットより先に Hono Worker へ渡します。
 
 Cloudflare へデプロイする前に、production Neon の pooled connection string と Better Auth の設定を Worker secret として登録します。secret の値は対話入力し、コマンド引数・Git・ログに含めません。
