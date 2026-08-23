@@ -25,20 +25,20 @@ export function HomePage() {
         src={walletIllustration}
         alt="財布とコインのイラスト"
       />
-      <section className="mt-0">
-        <p className="mb-1.5 text-[13px] font-bold">請求総額</p>
-        <strong className="block text-[49px] leading-none font-extrabold tracking-[-0.06em]">
-          ¥2,000
-        </strong>
-        <span className="mt-3 inline-block rounded-full border border-black px-2.5 py-1 text-xs font-bold">
-          3件の請求が未精算です
-        </span>
-      </section>
+      <p className="mt-0 text-[15px] font-bold">
+        立て替えた支払いを記録・確認できます
+      </p>
       <Link
         className="mt-6 grid h-16 place-items-center bg-black text-[15px] font-bold text-white"
         to="/payments/new"
       >
         立て替えたお金を記録する
+      </Link>
+      <Link
+        className="mt-3 grid h-12 place-items-center border border-black text-sm font-bold"
+        to="/records"
+      >
+        出金記録を確認する
       </Link>
     </Screen>
   );
