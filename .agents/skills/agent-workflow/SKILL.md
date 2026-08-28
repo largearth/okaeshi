@@ -42,7 +42,7 @@ Pull Request の前に `git diff` と `git status` を確認する。Problem / G
 3. remote へ push する。
 4. Pull Request を作成する。
 
-実装完了後に作成する Issue、ブランチ名、Pull Request とローカル Plan の対応は [Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従う。PR 本文には What、Why、Verification、Evidence と、必要に応じて残るリスク・判断・関連する Problem / Plan を日本語で記載する。
+実装完了後に作成する Issue、ブランチ名、Pull Request とローカル Plan の対応は [Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従う。PR 本文には What、Why、Verification、Evidence と、必要に応じて残るリスク・判断・関連する Problem / Plan を日本語で記載する。`pr-evidence` Skill に従い、ユーザー向け画面または操作フローを変更した PR には、実際に表示できるスクリーンショットを本文へインラインで添付し、作成後に表示を確認する。
 
 外部への変更に必要な権限がユーザーから明示または暗黙に与えられていない場合は、実装と検証を完了した時点で権限を求める。完了時は PR URL と重要な検証結果を簡潔に報告する。
 
