@@ -11,6 +11,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "db:seed": "tsx src/db/seed.ts",
+    "verify:seed-records-delete": "tsx src/db/verify-records-delete.ts",
     "deploy": "pnpm --filter web build:production && wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },

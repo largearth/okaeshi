@@ -10,6 +10,9 @@ build/
 
 # Test coverage
 coverage/
+test-results/
+playwright-report/
+verification-artifacts/
 
 # Environment and local secrets
 .env

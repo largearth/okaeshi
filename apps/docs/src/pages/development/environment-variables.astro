@@ -197,6 +197,12 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
         <code>OKAESHI_ENV_FILE=.dev.vars.production</code> を指定し、development 用
         <code>.dev.vars</code> と取り違えません。
       </p>
+      <p>
+        <code>main</code> への push は GitHub Actions から本番へデプロイします。GitHub Actions
+        secrets には <code>CLOUDFLARE_ACCOUNT_ID</code> と、対象 Account の Workers をデプロイできる
+        最小権限の <code>CLOUDFLARE_API_TOKEN</code> を設定します。Worker runtime の secret は Cloudflare
+        側で管理し、GitHub には保存しません。
+      </p>
     </section>
 
     <aside class="environment-rule">
