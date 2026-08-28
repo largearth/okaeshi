@@ -112,6 +112,23 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function del(path: string): Promise<void> {
+  const response = await fetch(`${apiOrigin}${path}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const body = (await response
+      .json()
+      .catch(() => null)) as ErrorResponse | null;
+    throw new ApiRequestError(
+      response.status,
+      body?.message ?? "データの削除に失敗しました。",
+    );
+  }
+}
+
 export function getCurrentUser() {
   return get<CurrentUser>("/api/me");
 }
@@ -146,4 +163,8 @@ export function createGroupWithdrawal(
   input: CreateWithdrawalInput,
 ) {
   return post<Withdrawal>(`/api/groups/${groupId}/withdrawals`, input);
+}
+
+export function deleteGroupWithdrawal(groupId: string, withdrawalId: string) {
+  return del(`/api/groups/${groupId}/withdrawals/${withdrawalId}`);
 }

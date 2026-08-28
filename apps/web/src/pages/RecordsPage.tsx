@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ApiRequestError,
+  deleteGroupWithdrawal,
   getGroupWallets,
   getGroupWithdrawals,
   type Wallet,
@@ -18,6 +19,10 @@ export function RecordsPage() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [areRecordsLoading, setAreRecordsLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingWithdrawalId, setDeletingWithdrawalId] = useState<
+    string | null
+  >(null);
 
   const refreshRecords = useCallback(async () => {
     if (!currentGroup) return;
@@ -51,6 +56,32 @@ export function RecordsPage() {
   useEffect(() => {
     void Promise.resolve().then(refreshRecords);
   }, [refreshRecords]);
+
+  const deleteWithdrawal = async (withdrawal: Withdrawal) => {
+    if (!currentGroup) return;
+    if (!window.confirm(`「${withdrawal.purpose}」を削除しますか？`)) return;
+
+    setDeletingWithdrawalId(withdrawal.id);
+    setDeleteError(null);
+    try {
+      await deleteGroupWithdrawal(currentGroup.id, withdrawal.id);
+      setWithdrawals((currentWithdrawals) =>
+        currentWithdrawals.filter((item) => item.id !== withdrawal.id),
+      );
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        unauthenticate();
+        return;
+      }
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "出金記録を削除できませんでした。",
+      );
+    } finally {
+      setDeletingWithdrawalId(null);
+    }
+  };
 
   const walletNameById = new Map(
     wallets.map((wallet) => [wallet.id, wallet.name]),
@@ -107,10 +138,21 @@ export function RecordsPage() {
           <p className="text-sm text-neutral-600">まだ出金記録はありません。</p>
         </Card>
       ) : (
-        <WithdrawalList
-          withdrawals={withdrawals}
-          walletNameById={walletNameById}
-        />
+        <>
+          {deleteError && (
+            <Card className="mb-4 p-4">
+              <p className="text-sm" role="alert">
+                {deleteError}
+              </p>
+            </Card>
+          )}
+          <WithdrawalList
+            withdrawals={withdrawals}
+            walletNameById={walletNameById}
+            deletingWithdrawalId={deletingWithdrawalId}
+            onDelete={(withdrawal) => void deleteWithdrawal(withdrawal)}
+          />
+        </>
       )}
     </Screen>
   );
