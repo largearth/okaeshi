@@ -12,9 +12,10 @@ order: 5
 
 ## 現状
 
-- テストスイートはまだ整備していない
-- テスト実行用の環境もまだ用意していない
-- そのため、現時点では CI に `test` を載せない
+- Backend には Vitest による unit test がある
+- 重要な画面フローは、必要に応じて Playwright の固定 verification scenario として追加する
+- Browser verification はローカル環境の再現可能な fixture を使い、まず `pnpm verify:<feature>` として実行する
+- Browser verification は現時点では CI に載せず、ローカルで安定して再現できることを優先する
 
 ## ローカル運用
 
@@ -26,6 +27,7 @@ order: 5
 - 純粋関数やドメインロジックは unit test を優先する
 - API 境界や DB を伴う処理は integration test を優先する
 - 重要なユーザーフローは e2e test を検討する
+- UI の変更や削除などの破壊的操作は、実画面を通す固定 Playwright scenario を優先する
 
 ## 追加基準
 

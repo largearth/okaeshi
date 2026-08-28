@@ -8,9 +8,13 @@
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "verify:install-browser": "playwright install chromium",
+    "verify:records-delete": "pnpm --filter backend verify:seed-records-delete && playwright test verification/records-delete.spec.ts",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "dotenv": "^17.4.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "prettier": "^3.9.6",

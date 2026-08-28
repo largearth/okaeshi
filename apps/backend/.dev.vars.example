@@ -23,3 +23,10 @@ SEED_USER_1_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"
 SEED_USER_2_NAME="Development member"
 SEED_USER_2_EMAIL="member@example.test"
 SEED_USER_2_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"
+
+# Dedicated account and fixture data for local Playwright verification. These values
+# are only used with ENVIRONMENT=development and must not identify a real person.
+VERIFY_USER_NAME="Verification user"
+VERIFY_USER_EMAIL="verification@example.test"
+VERIFY_USER_PASSWORD="replace-with-a-unique-password-of-at-least-12-characters"
+VERIFY_GROUP_NAME="E2E verification household"
