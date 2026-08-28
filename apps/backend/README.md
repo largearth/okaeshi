@@ -56,6 +56,19 @@ Swagger UI は Backend と同一オリジンの session cookie を利用しま�
 
 `db:seed` は `SEED_*` の2ユーザー、パスワードハッシュ、共有 Group、各 Group membership を冪等に投入します。必須の環境変数がない場合は失敗します。実行前に migration を適用してください。
 
+## Browser verification
+
+`pnpm verify:records-delete` は、ローカルの Backend と Web を起動し、Playwright でログイン後の出金削除を実画面で確認します。初回だけ Chromium をインストールしてください。
+
+```sh
+pnpm verify:install-browser
+pnpm verify:records-delete
+```
+
+検証 fixture は `ENVIRONMENT=development` のときだけ作成され、固定の検証専用 User、Group、Wallet、未配分出金、配分済み出金を冪等に投入します。通常の開発用・本番用アカウントは使用しません。`VERIFY_USER_*` と `VERIFY_GROUP_NAME` を `.dev.vars` に設定すると、fixture の表示名とログイン情報を必要に応じて上書きできます。
+
+成功すると削除後の画面を `verification-artifacts/records-delete-after.png` に保存します。この画像は Pull Request の `Evidence` に添付するための成果物です。
+
 ## Neon and Cloudflare configuration
 
 Neon では `development` ブランチを開発用、`production` ブランチを本番用に使用します。
@@ -102,6 +115,13 @@ production build と deploy は以下で実行します。`VITE_API_ORIGIN` は�
 pnpm --filter backend run deploy
 ```
 
+`main` への push では GitHub Actions が同じ deploy command を実行します。事前にリポジトリの Actions secrets へ次を設定してください。
+
+- `CLOUDFLARE_ACCOUNT_ID`: デプロイ先 Cloudflare Account の ID
+- `CLOUDFLARE_API_TOKEN`: 対象 Account の Workers をデプロイできる、最小権限に絞った API Token
+
+Worker runtime の `DATABASE_URL`、`BETTER_AUTH_URL`、`BETTER_AUTH_SECRET` は GitHub Actions secrets には設定せず、Cloudflare Worker secrets として管理します。
+
 `wrangler.jsonc` では Worker observability を有効にしています。デプロイ後のエラーやリクエストログは Cloudflare dashboard の `okaeshi-app` Worker で確認し、CLI では次のコマンドでリアルタイムに確認できます。
 
 ```sh
@@ -117,6 +137,7 @@ pnpm --filter backend exec wrangler tail okaeshi-app
 - `pnpm --filter backend db:migrate`: `DATABASE_URL` のDBに未適用 migration を適用する
 - `pnpm --filter backend db:check`: migration 履歴の整合性を確認する
 - `pnpm --filter backend db:seed`: 開発用の許可ユーザー、共有 Group、所属情報を冪等に投入する
+- `pnpm --filter backend verify:seed-records-delete`: ローカル Browser verification 用 fixture を冪等に投入する
 - `pnpm --filter backend test`: スキーマ定義を検証する
 - `pnpm --filter backend lint`
 - `pnpm --filter backend typecheck`
