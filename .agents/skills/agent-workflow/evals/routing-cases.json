@@ -1,0 +1,79 @@
+[
+  {
+    "name": "small-change",
+    "input": "ボタンの文言を「保存」から「記録する」に変更して",
+    "expected_type": "small-change",
+    "expected_playbook": "small-change",
+    "expected_visited_stages": [
+      "understand",
+      "build",
+      "verification",
+      "evidence",
+      "delivery"
+    ],
+    "expected_final_state": "completed"
+  },
+  {
+    "name": "bug-fix",
+    "input": "出金を削除しても一覧から消えないので直して",
+    "expected_type": "bug-fix",
+    "expected_playbook": "bug-fix",
+    "expected_visited_stages": [
+      "understand",
+      "reproduce",
+      "build",
+      "verification",
+      "evidence",
+      "delivery"
+    ],
+    "expected_final_state": "completed"
+  },
+  {
+    "name": "complex-change",
+    "input": "認証方式を変更して",
+    "expected_type": "complex-change",
+    "expected_playbook": "complex-change",
+    "expected_visited_stages": [
+      "understand",
+      "design",
+      "build",
+      "verification",
+      "evidence",
+      "delivery"
+    ],
+    "expected_final_state": "completed"
+  },
+  {
+    "name": "human-decision-missing-spec",
+    "input": "複数の妥当なProduct判断があり、既存情報から一意に決定できない変更をして",
+    "expected_type": "blocked",
+    "expected_playbook": null,
+    "expected_visited_stages": ["router"],
+    "blocked_at": "router",
+    "expected_final_state": "blocked"
+  },
+  {
+    "name": "verification-blocked",
+    "input": "Browser確認が必須のUI変更を行うが、Browser capabilityを利用できない",
+    "expected_type": "small-change",
+    "expected_playbook": "small-change",
+    "expected_visited_stages": ["understand", "build", "verification"],
+    "blocked_at": "verification",
+    "expected_final_state": "blocked"
+  },
+  {
+    "name": "delivery-blocked",
+    "input": "小さな設定変更を行うが、Delivery時にGitHub認証を利用できない",
+    "expected_type": "small-change",
+    "expected_playbook": "small-change",
+    "expected_visited_stages": [
+      "understand",
+      "build",
+      "verification",
+      "evidence",
+      "delivery"
+    ],
+    "blocked_at": "delivery",
+    "expected_final_state": "blocked"
+  }
+]

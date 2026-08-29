@@ -1,0 +1,63 @@
+{
+  "task_types": {
+    "small-change": "small-change",
+    "bug-fix": "bug-fix",
+    "feature": "complex-change",
+    "complex-change": "complex-change",
+    "investigation": "complex-change",
+    "blocked": null
+  },
+  "playbooks": {
+    "small-change": {
+      "stages": ["understand", "build", "verification", "evidence", "delivery"],
+      "skipped_stages": {
+        "reproduce": "既存不具合の再現を目的とする変更ではないため",
+        "design": "変更範囲と解決方法が明確な局所変更であるため"
+      }
+    },
+    "bug-fix": {
+      "stages": [
+        "understand",
+        "reproduce",
+        "build",
+        "verification",
+        "evidence",
+        "delivery"
+      ],
+      "skipped_stages": {
+        "design": "再現結果から変更範囲と解決方法を局所的に決定できる場合は不要なため"
+      }
+    },
+    "complex-change": {
+      "stages": [
+        "understand",
+        "design",
+        "build",
+        "verification",
+        "evidence",
+        "delivery"
+      ],
+      "skipped_stages": {
+        "reproduce": "bug-fixとして分類された変更ではないため"
+      }
+    }
+  },
+  "blocked_from": [
+    "router",
+    "understand",
+    "reproduce",
+    "design",
+    "build",
+    "verification",
+    "evidence",
+    "delivery"
+  ],
+  "normal_completion_requires": [
+    "verification",
+    "evidence",
+    "self-review",
+    "commit",
+    "push",
+    "pull-request"
+  ]
+}
