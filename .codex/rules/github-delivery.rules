@@ -1,0 +1,41 @@
+# 保護されたProject-local scriptだけをsandbox外で実行できるようにする。
+# script内でRepository、branch形式、PR baseを固定し、破壊的操作は提供しない。
+
+prefix_rule(
+    pattern = ["sh", ".codex/scripts/create-github-issue.sh"],
+    decision = "allow",
+    justification = "実装Planをlargearth/okaeshiのIssueとして保存するため",
+    match = [
+        "sh .codex/scripts/create-github-issue.sh '変更タイトル' .plans/change.md",
+    ],
+    not_match = [
+        "gh issue create --repo another-owner/another-repo --title '変更タイトル'",
+        "gh issue delete 42 --repo largearth/okaeshi",
+    ],
+)
+
+prefix_rule(
+    pattern = ["sh", ".codex/scripts/push-issue-branch.sh"],
+    decision = "allow",
+    justification = "現在のIssue番号branchをこのProjectのoriginへ通常pushするため",
+    match = [
+        "sh .codex/scripts/push-issue-branch.sh",
+    ],
+    not_match = [
+        "git push --force origin 42",
+        "git push --delete origin 42",
+    ],
+)
+
+prefix_rule(
+    pattern = ["sh", ".codex/scripts/create-github-pr.sh"],
+    decision = "allow",
+    justification = "検証済み変更をlargearth/okaeshiのPull Requestとして提出するため",
+    match = [
+        "sh .codex/scripts/create-github-pr.sh 42 '変更タイトル' .plans/pr.md",
+    ],
+    not_match = [
+        "gh pr create --repo another-owner/another-repo --head 42",
+        "gh pr merge 42 --repo largearth/okaeshi",
+    ],
+)

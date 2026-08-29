@@ -27,7 +27,7 @@ order: 3
 
 ### lint
 
-- `apps/frontend` の対象ファイルに対して `eslint` を実行する
+- `apps/web` の対象ファイルに対して `eslint` を実行する
 - `apps/backend` の対象ファイルに対して `eslint` を実行する
 
 ### pre-push
@@ -42,4 +42,4 @@ order: 3
 - Browser verification を初めて実行する前に `pnpm verify:install-browser` で Chromium を導入する
 - `pnpm verify:records-delete` は、検証専用 fixture を投入して実画面の出金削除を確認し、`verification-artifacts/records-delete-after.png` を保存する
 - テスト運用の詳細は [テスト運用](/development/test-operations) を参照する
-- `pnpm build` で Next の開発キャッシュ由来の型エラーが出る場合は、`apps/frontend/.next` を消してから再実行する
+- `pnpm build` で Next の開発キャッシュ由来の型エラーが出る場合は、`apps/web/.next` を消してから再実行する

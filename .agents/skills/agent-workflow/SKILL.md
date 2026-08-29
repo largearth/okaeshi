@@ -1,51 +1,88 @@
 ---
 name: agent-workflow
-description: このリポジトリのコードまたは設定を変更するタスクを、調査、必要に応じた計画、実装、検証、自己レビュー、Pull Request 作成まで自律的に進める。
+description: このリポジトリのコードまたは設定変更を、Task分類、Playbook選択、実装、検証、Evidence、Pull RequestまたはBlocked Reportまで一貫して進める。
 ---
 
 # Agent workflow
 
-本 Skill は変更タスクの一本道を定義するオーケストレーターである。各工程の詳しい手順は、該当する専門 Skill とリポジトリのドキュメントに委譲する。
+コードまたは設定変更は、個別の判断で工程を省略せず、このPipelineを通す。HumanからはProblem / Goal / Done conditionを受け取り、正常時はPR URL、安全に完了できない場合はBlocked Reportを返す。
 
-人間からは実装手順ではなく Problem / Goal を受け取る。安全に一意に決められない重要な仕様判断、または安全な実装・検証を妨げる問題は `blocked-road-maintenance` に従う。
+## Pipeline
 
-## Workflow
+```text
+Human Input
+→ Router
+→ Selected Playbook
+→ Stages
+→ Verification
+→ Evidence
+→ Pull Request
+```
 
-### 1. Understand
+どの工程でも安全に次へ進めない場合は `blocked-road-maintenance` に遷移して停止する。
 
-Problem / Goal を理解する。必要に応じて Product Specs、コード、テスト、Skills、Feature Map、Git history を確認する。実装方法を質問する前に、必要な情報を自力で調査する。
+## 1. Route
 
-### 2. Plan if needed
+実装前に [references/pipeline.json](references/pipeline.json) を読み、Taskを分類する。Routerではコードや設定を変更しない。
 
-変更範囲と解決方法が明確な局所的タスクは、そのまま実装する。複数機能・複数レイヤーにまたがる、または変更前に整理が必要なタスクでは `.plans/` に Working Plan を作成する。
+分類結果を次の形で保持する。
 
-Plan は Agent 自身の整理とスコープ境界のためのものであり、通常は人間の承認を待たない。Plan の形式、ライフサイクル、Issue・ブランチ・PR の対応は [Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従う。Plan を作成した場合、実装中は `scope-guard` Skill に従う。
+```text
+type: <task type>
+reason: <入力と既存情報に基づく理由>
+selected_playbook: <playbook or none>
+```
 
-### 3. Implement
+- `small-change`: 変更範囲と解決方法が明確な局所変更
+- `bug-fix`: 既存の振る舞いが期待結果と異なり、再現確認が必要な修正
+- `feature`: 新しい振る舞いを追加する変更
+- `complex-change`: 複数機能・複数レイヤー・重要設計へまたがる変更
+- `investigation`: 変更依頼の中で実装方針を決めるための調査が中心となる変更。調査結果だけを求める非変更タスクはこのSkillの対象外
+- `blocked`: 重要な仕様判断を安全に一意に決められず、Playbookを開始できない状態
 
-Problem / Goal と必要に応じて作成した Plan に必要な変更だけを行う。既存の設計、命名、フォルダ構成を優先し、推測で仕様を追加しない。作業中に発見した別問題は勝手に修正しない。
+`feature`、`complex-change`、`investigation` は最小構成では `complex-change` Playbookへ渡す。安全に一意に分類できない場合は、近い分類を推測せず `blocked` とする。
 
-### 4. Verify
+## 2. Execute the selected playbook
 
-`verification` Skill に従い、変更内容に必要な検証と証跡の取得を行う。検証できない場合や、検証に必要な環境・データ・操作方法が不足している場合は `blocked-road-maintenance` に従う。
+[references/stage-contracts.md](references/stage-contracts.md) を読み、`pipeline.json` に定義された順番でStageを実行する。各Stageは自分の責務だけを行い、Outputを次のStageへ渡す。
 
-### 5. Review own changes
+- Playbookに含まれないStageは実行せず、Pipeline Traceへskip理由を残す。
+- `design` を実行する場合は [Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従って `.plans/` にWorking Planを作り、実装中は `scope-guard` に従う。通常はHuman approvalを待たない。
+- `verification` は `verification` Skillへ委譲する。
+- ユーザー向け画面または操作フローを変更した場合のEvidenceは `pr-evidence` Skillへ委譲する。
+- Stageの途中で発見した別問題を修正したり、次のStageの責務を先取りしたりしない。
 
-Pull Request の前に `git diff` と `git status` を確認する。Problem / Goal 以外の変更、不必要なコード・コメント・一時ファイルが残っていないこと、および検証が完了していることを確かめる。
+## 3. Blocked
 
-### 6. Deliver
+Router、全Stage、DeliveryのどこからでもBlockedへ遷移できる。重要なProduct判断、環境、データ、権限、操作手順、検証能力が不足し、安全に進めない場合は通常の質問でPipelineを継続しない。
 
-変更タスクは、次をすべて満たして初めて完了する。
+`blocked-road-maintenance` に従ってBlocked Reportと停止時点までのPipeline Traceを残し、作業を停止する。未検証の実装を正常終了としてDeliveryへ進めない。
 
-1. ブランチを作成する。
-2. commit する。
-3. remote へ push する。
-4. Pull Request を作成する。
+## 4. Deliver
 
-実装完了後に作成する Issue、ブランチ名、Pull Request とローカル Plan の対応は [Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従う。PR 本文には What、Why、Verification、Evidence と、必要に応じて残るリスク・判断・関連する Problem / Plan を日本語で記載する。`pr-evidence` Skill に従い、ユーザー向け画面または操作フローを変更した PR には、実際に表示できるスクリーンショットを本文へインラインで添付し、作成後に表示を確認する。
+Delivery前に `git diff` と `git status` を確認し、スコープ外変更、不必要なファイル、未完了の検証がないことを自己レビューする。
 
-外部への変更に必要な権限がユーザーから明示または暗黙に与えられていない場合は、実装と検証を完了した時点で権限を求める。完了時は PR URL と重要な検証結果を簡潔に報告する。
+[references/delivery-surfaces.md](references/delivery-surfaces.md) を読み、LocalまたはCodex Cloudの実行Surfaceに合うDelivery経路を選ぶ。[Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従ってIssue、Issue番号のブランチ、commit、push、Pull Requestを作成する。PR本文には日本語で `What`、`Why`、`Verification`、`Evidence` と関連Issueを記載する。
 
-## Blocked
+次をすべて満たし、PR URLが存在する場合だけ正常終了とする。
 
-途中で安全に進められなくなった場合は、通常の質問で作業を継続しない。`blocked-road-maintenance` Skill に従って blocked report を作成し、原因・必要な整備・再開条件を記録してタスクを停止する。
+- Selected Playbookの全必須Stageが完了している
+- Verification verdictが `pass`
+- EvidenceがPRへ渡せる形で整理されている
+- Self review、commit、push、Pull Request作成が完了している
+
+## 5. Report the pipeline trace
+
+正常終了の報告またはBlocked Reportで、最低限次を確認できるようにする。
+
+```text
+Input
+Task type + reason
+Selected playbook
+Visited stages
+Skipped stages + reason
+Final state: completed | blocked
+PR URL | Blocked Report path
+```
+
+正常終了の最終成果物はPR URL、異常終了の最終成果物はBlocked Reportであり、実装完了だけをDoneとしない。

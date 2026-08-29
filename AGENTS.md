@@ -3,7 +3,7 @@
 ## モノレポ
 
 - `pnpm` workspaces と `Turborepo` を使用する。
-- `apps/frontend` はフロントエンドアプリ。
+- `apps/web` はフロントエンドアプリ。
 - `apps/backend` はバックエンドアプリ。
 
 ## スコープ
