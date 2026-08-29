@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   ApiRequestError,
   createGroupWallet,
+  deleteGroupWallet,
   getGroupMembers,
   getGroupWallets,
   type GroupMember,
@@ -23,6 +24,8 @@ export function WalletsPage() {
   const [ownerMemberId, setOwnerMemberId] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingWalletId, setDeletingWalletId] = useState<string | null>(null);
 
   const refreshWalletData = useCallback(async () => {
     if (!currentGroup) return;
@@ -93,6 +96,30 @@ export function WalletsPage() {
       );
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const deleteWallet = async (wallet: Wallet) => {
+    if (!currentGroup) return;
+    if (!window.confirm(`「${wallet.name}」を削除しますか？`)) return;
+
+    setDeletingWalletId(wallet.id);
+    setDeleteError(null);
+    try {
+      await deleteGroupWallet(currentGroup.id, wallet.id);
+      setWallets((currentWallets) =>
+        currentWallets.filter((item) => item.id !== wallet.id),
+      );
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        unauthenticate();
+        return;
+      }
+      setDeleteError(
+        error instanceof Error ? error.message : "財布を削除できませんでした。",
+      );
+    } finally {
+      setDeletingWalletId(null);
     }
   };
 
@@ -218,11 +245,25 @@ export function WalletsPage() {
               </form>
             </Card>
           </section>
-          <WalletSection title="共有財布" wallets={sharedWallets} />
+          {deleteError && (
+            <Card className="mb-4 p-4">
+              <p className="text-sm" role="alert">
+                {deleteError}
+              </p>
+            </Card>
+          )}
+          <WalletSection
+            title="共有財布"
+            wallets={sharedWallets}
+            deletingWalletId={deletingWalletId}
+            onDelete={(wallet) => void deleteWallet(wallet)}
+          />
           <WalletSection
             title="個人財布"
             wallets={personalWallets}
             ownerNameById={ownerNameById}
+            deletingWalletId={deletingWalletId}
+            onDelete={(wallet) => void deleteWallet(wallet)}
           />
         </>
       )}
@@ -234,10 +275,14 @@ function WalletSection({
   title,
   wallets,
   ownerNameById,
+  deletingWalletId,
+  onDelete,
 }: {
   title: string;
   wallets: Wallet[];
   ownerNameById?: Map<string, string>;
+  deletingWalletId: string | null;
+  onDelete: (wallet: Wallet) => void;
 }) {
   return (
     <section className="mb-6">
@@ -263,6 +308,15 @@ function WalletSection({
                 </small>
               </div>
               <Badge>公開中</Badge>
+              <button
+                type="button"
+                aria-label={`${wallet.name}を削除`}
+                onClick={() => onDelete(wallet)}
+                disabled={deletingWalletId === wallet.id}
+                className="shrink-0 text-sm font-bold underline disabled:cursor-not-allowed disabled:text-neutral-400"
+              >
+                {deletingWalletId === wallet.id ? "削除中…" : "削除"}
+              </button>
             </div>
           ))
         )}

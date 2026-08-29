@@ -1,0 +1,152 @@
+import { config } from "dotenv";
+import { hashPassword } from "better-auth/crypto";
+
+import { createDb } from "./client";
+import {
+  accounts,
+  groupMembers,
+  groups,
+  users,
+  wallets,
+  withdrawals,
+} from "./schema";
+
+config({ path: process.env.OKAESHI_ENV_FILE ?? ".dev.vars" });
+
+const required = (value: string | undefined, name: string) => {
+  if (!value) {
+    throw new Error(`${name} must be configured before running verification`);
+  }
+
+  return value;
+};
+
+if (process.env.ENVIRONMENT !== "development") {
+  throw new Error(
+    "Verification fixtures can only be created with ENVIRONMENT=development",
+  );
+}
+
+const databaseUrl = required(process.env.DATABASE_URL, "DATABASE_URL");
+const verificationUser = {
+  id: "7a60140c-6060-4a84-b3d8-6e0571554db8",
+  name: process.env.VERIFY_USER_NAME ?? "Verification user",
+  email: (
+    process.env.VERIFY_USER_EMAIL ?? "verification@example.test"
+  ).toLowerCase(),
+  password:
+    process.env.VERIFY_USER_PASSWORD ?? "verify-records-delete-password",
+};
+const verificationGroup = {
+  id: "de086a07-0c9c-4a2a-bf75-029c7d0df01d",
+  name: process.env.VERIFY_GROUP_NAME ?? "E2E verification household",
+};
+const verificationMemberId = "280e9f97-5c9d-4d7b-9c73-a44d7636b3c9";
+const deletableWalletId = "5b28f87b-3678-4f1c-bf85-903e5d80a626";
+const inUseWalletId = "387f7d63-29ba-4d2c-82a0-7d4118f798a2";
+const withdrawalId = "b852d8e7-3b8b-422f-939b-4a42d1f9ce12";
+
+const db = createDb(databaseUrl);
+
+const seed = async () => {
+  const passwordHash = await hashPassword(verificationUser.password);
+
+  await db
+    .insert(users)
+    .values({
+      id: verificationUser.id,
+      name: verificationUser.name,
+      email: verificationUser.email,
+      emailVerified: true,
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: verificationUser.name,
+        email: verificationUser.email,
+        emailVerified: true,
+        updatedAt: new Date(),
+      },
+    });
+
+  await db
+    .insert(accounts)
+    .values({
+      userId: verificationUser.id,
+      providerId: "credential",
+      accountId: verificationUser.id,
+      password: passwordHash,
+    })
+    .onConflictDoUpdate({
+      target: [accounts.providerId, accounts.accountId],
+      set: { password: passwordHash, updatedAt: new Date() },
+    });
+
+  await db
+    .insert(groups)
+    .values(verificationGroup)
+    .onConflictDoUpdate({
+      target: groups.id,
+      set: { name: verificationGroup.name, updatedAt: new Date() },
+    });
+
+  await db
+    .insert(groupMembers)
+    .values({
+      id: verificationMemberId,
+      groupId: verificationGroup.id,
+      userId: verificationUser.id,
+      role: "owner",
+      status: "active",
+    })
+    .onConflictDoUpdate({
+      target: groupMembers.id,
+      set: { role: "owner", status: "active", leftAt: null },
+    });
+
+  await db
+    .insert(wallets)
+    .values([
+      {
+        id: deletableWalletId,
+        groupId: verificationGroup.id,
+        name: "E2E 削除可能財布",
+        ownerType: "shared",
+      },
+      {
+        id: inUseWalletId,
+        groupId: verificationGroup.id,
+        name: "E2E 参照中財布",
+        ownerType: "shared",
+      },
+    ])
+    .onConflictDoNothing();
+
+  await db
+    .insert(withdrawals)
+    .values({
+      id: withdrawalId,
+      groupId: verificationGroup.id,
+      walletId: inUseWalletId,
+      purpose: "E2E 財布参照用出金",
+      amount: 1000n,
+      withdrawnOn: "2026-01-01",
+      status: "unallocated",
+    })
+    .onConflictDoUpdate({
+      target: withdrawals.id,
+      set: {
+        walletId: inUseWalletId,
+        purpose: "E2E 財布参照用出金",
+        amount: 1000n,
+        withdrawnOn: "2026-01-01",
+        status: "unallocated",
+        updatedAt: new Date(),
+      },
+    });
+};
+
+seed().catch((error: unknown) => {
+  console.error(error);
+  process.exitCode = 1;
+});
