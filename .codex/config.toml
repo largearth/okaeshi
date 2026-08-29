@@ -1,0 +1,4 @@
+# ローカルCodexのProject既定値。Codex CloudのGitHub権限はCloud側で管理する。
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"

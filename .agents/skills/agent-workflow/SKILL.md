@@ -62,7 +62,7 @@ Router、全Stage、DeliveryのどこからでもBlockedへ遷移できる。重
 
 Delivery前に `git diff` と `git status` を確認し、スコープ外変更、不必要なファイル、未完了の検証がないことを自己レビューする。
 
-[Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従ってIssue、Issue番号のブランチ、commit、push、Pull Requestを作成する。PR本文には日本語で `What`、`Why`、`Verification`、`Evidence` と関連Issueを記載する。
+[references/delivery-surfaces.md](references/delivery-surfaces.md) を読み、LocalまたはCodex Cloudの実行Surfaceに合うDelivery経路を選ぶ。[Planning Workflow](../../../apps/docs/src/content/development/planning-workflow.md) に従ってIssue、Issue番号のブランチ、commit、push、Pull Requestを作成する。PR本文には日本語で `What`、`Why`、`Verification`、`Evidence` と関連Issueを記載する。
 
 次をすべて満たし、PR URLが存在する場合だけ正常終了とする。
 

@@ -61,7 +61,7 @@ Planは通常Human approvalを待たない。安全に一意に決められな�
 ## Delivery
 
 - Input: Verification verdict `pass`、Evidence bundle、最終差分
-- Responsibility: Self review、Issue作成、Issue番号ブランチへの変更、commit、push、PR作成をPlanning Workflowに沿って行う
+- Responsibility: [delivery-surfaces.md](delivery-surfaces.md) で実行Surfaceを判定し、Self review、Issue作成、Issue番号ブランチへの変更、commit、push、PR作成をPlanning Workflowに沿って行う
 - Output: `issue_url`、`commit`、`branch`、`pr_url`
 
 外部操作に必要な権限または認証がなくDeliveryを完了できない場合は、通常メッセージだけで終了せずBlocked Reportを作る。
