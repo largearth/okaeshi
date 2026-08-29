@@ -41,5 +41,6 @@ order: 3
 - `lint-staged` はステージされたファイルだけを対象にする
 - Browser verification を初めて実行する前に `pnpm verify:install-browser` で Chromium を導入する
 - `pnpm verify:records-delete` は、検証専用 fixture を投入して実画面の出金削除を確認し、`verification-artifacts/records-delete-after.png` を保存する
+- `pnpm verify:wallet-delete` は、検証専用 fixture を投入して未参照財布の削除と参照中財布の削除拒否を実画面で確認し、`verification-artifacts/wallet-delete-after.png` を保存する
 - テスト運用の詳細は [テスト運用](/development/test-operations) を参照する
 - `pnpm build` で Next の開発キャッシュ由来の型エラーが出る場合は、`apps/web/.next` を消してから再実行する
