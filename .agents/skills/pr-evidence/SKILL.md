@@ -1,6 +1,6 @@
 ---
 name: pr-evidence
-description: ユーザー向け画面または操作フローを変更した Pull Request に、原則として実際に表示できるスクリーンショットを添付し、本番実機でしか確認できない低リスク UI は承認済み例外を記録して Reviewer が判断できる Evidence にする。
+description: ユーザー向け画面または操作フローを変更した Pull Request に、原則として実際に表示できるスクリーンショットを添付し、本番実機でしか確認できない低リスク UI は例外を記録して Reviewer が判断できる Evidence にする。
 ---
 
 # PR evidence
@@ -19,18 +19,17 @@ description: ユーザー向け画面または操作フローを変更した Pul
 
 ## Production device exception
 
-本番環境でしか確認できない実機・OS 固有の低リスク UI または表示挙動は、`verification` Skill の本番実機確認の例外条件をすべて満たす場合に限り、変更後スクリーンショットなしで Evidence Stage を通過できる。この例外には、対象変更についての Human の明示承認が必要であり、過去の承認や一般的な運用方針を推測して適用しない。
+本番環境でしか確認できない実機・OS 固有の低リスク UI または表示挙動は、`verification` Skill の本番実機確認の例外条件をすべて満たす場合に限り、変更後スクリーンショットなしで Evidence Stage を通過できる。PR の例外記録は、本番反映後に確認する意図を Reviewer へ伝えるために必須とする。
 
 例外を適用する場合、PR の `## Evidence` に `### 本番実機確認の例外` を設け、次をすべて記録する。
 
 - 例外を適用した事実
-- Human が本番反映後の確認と例外通過を明示承認したこと
 - production 前に実機確認できない具体的な理由
 - production 前に確認済みの代替 Evidence
 - 未確認の挙動と、実機確認済みではないこと
 - 本番反映後の具体的な確認手順
 
-例外は screenshot の欠落を隠すために使わず、未確認の production check を Reviewer が判断できる risk acceptance として残す。セキュリティ、認証、権限、データ整合性、金銭計算、破壊的操作、migration、および production 前に再現可能な変更には適用しない。
+例外は screenshot の欠落を隠すために使わず、未確認の production check を Reviewer が判断できる記録として残す。セキュリティ、認証、権限、データ整合性、金銭計算、破壊的操作、migration、および production 前に再現可能な変更には適用しない。
 
 ## Confirm delivery
 
