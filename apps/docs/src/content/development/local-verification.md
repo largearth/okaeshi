@@ -27,7 +27,7 @@ order: 3
 
 ### lint
 
-- `apps/frontend` の対象ファイルに対して `eslint` を実行する
+- `apps/web` の対象ファイルに対して `eslint` を実行する
 - `apps/backend` の対象ファイルに対して `eslint` を実行する
 
 ### pre-push
@@ -41,4 +41,4 @@ order: 3
 - `lint-staged` はステージされたファイルだけを対象にする
 - `test` は現時点では環境未整備のため対象外
 - テスト運用の詳細は [テスト運用](/development/test-operations) を参照する
-- `pnpm build` で Next の開発キャッシュ由来の型エラーが出る場合は、`apps/frontend/.next` を消してから再実行する
+- `pnpm build` で Next の開発キャッシュ由来の型エラーが出る場合は、`apps/web/.next` を消してから再実行する
