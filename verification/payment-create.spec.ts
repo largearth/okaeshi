@@ -33,15 +33,17 @@ test("認証済みの状態から出金を作成できる", async ({ page }) => 
   );
   expect(signInResponse.status(), await signInResponse.text()).toBe(200);
 
-  await page.goto(`${webOrigin}/payments/new`);
+  await page.goto(`${webOrigin}/home`);
+  await page.getByRole("button", { name: "立て替えたお金を記録する" }).click();
 
   const amountInput = page.getByLabel("金額");
+  await expect(page.getByRole("dialog")).toBeVisible();
   await expect(amountInput).toBeFocused();
   await expect(page.getByLabel("日付（任意）")).toHaveValue(today());
   await expect(
     page.getByRole("button", { name: "出金を記録する" }),
   ).toBeDisabled();
-  await expect(page.getByRole("link", { name: "キャンセル" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "キャンセル" })).toBeVisible();
 
   await amountInput.fill("1000");
   await expect(amountInput).toHaveValue("1,000");
