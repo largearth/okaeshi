@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiRequestError, createGroupWithdrawal } from "../api";
 import { Screen } from "../components/layout";
@@ -23,17 +23,10 @@ export function PaymentPage() {
   const [note, setNote] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const amountInputRef = useRef<HTMLInputElement>(null);
   const isFormReady =
     /^[1-9][0-9]*$/.test(amount) &&
     Boolean(walletId) &&
     Boolean(purpose.trim());
-
-  useEffect(() => {
-    if (!isLoading && walletStatus === "success" && wallets.length > 0) {
-      amountInputRef.current?.focus();
-    }
-  }, [isLoading, walletStatus, wallets.length]);
 
   const handleAmountChange = (value: string) => {
     const digits = value.replaceAll(/\D/g, "").replace(/^0+/, "");
@@ -156,7 +149,7 @@ export function PaymentPage() {
             <div className="flex items-center gap-3">
               <span className="text-[42px] leading-none font-extrabold">¥</span>
               <input
-                ref={amountInputRef}
+                autoFocus
                 value={formatAmount(amount)}
                 onChange={(event) => handleAmountChange(event.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-right text-[42px] leading-none font-extrabold outline-none placeholder:text-neutral-300"
