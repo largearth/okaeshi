@@ -173,7 +173,7 @@ export function PaymentPage() {
               <select
                 value={walletId}
                 onChange={(event) => setWalletId(event.target.value)}
-                className={`h-14 w-full bg-white px-4 text-sm font-bold outline-none ${
+                className={`h-14 w-full bg-white px-4 text-base font-bold outline-none ${
                   walletId ? "text-black" : "text-neutral-400"
                 }`}
                 disabled={isSubmitting}
