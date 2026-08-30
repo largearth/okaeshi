@@ -1,9 +1,9 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
-  type ReactNode,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,18 +12,10 @@ import {
   getGroupWallets,
   type Wallet,
 } from "../api";
-import { Heading, Screen } from "../components/layout";
+import { Screen } from "../components/layout";
 import { Card, Icon } from "../components/ui";
 import { useGroupContext } from "../use-group-context";
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="mb-4 block text-sm font-bold">
-      <b className="mb-2 block">{label}</b>
-      {children}
-    </label>
-  );
-}
 export function PaymentPage() {
   const navigate = useNavigate();
   const { currentGroup, errorMessage, isLoading, refresh, unauthenticate } =
@@ -38,6 +30,7 @@ export function PaymentPage() {
   const [note, setNote] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const amountInputRef = useRef<HTMLInputElement>(null);
 
   const refreshWallets = useCallback(async () => {
     if (!currentGroup) return;
@@ -66,6 +59,12 @@ export function PaymentPage() {
     void Promise.resolve().then(refreshWallets);
   }, [refreshWallets]);
 
+  useEffect(() => {
+    if (!isLoading && !areWalletsLoading && wallets.length > 0) {
+      amountInputRef.current?.focus();
+    }
+  }, [areWalletsLoading, isLoading, wallets.length]);
+
   const saveWithdrawal = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!currentGroup) return;
@@ -84,11 +83,6 @@ export function PaymentPage() {
       setSubmitError("出金元の財布を選択してください。");
       return;
     }
-    if (!withdrawnOn) {
-      setSubmitError("支出日を入力してください。");
-      return;
-    }
-
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -96,7 +90,7 @@ export function PaymentPage() {
         purpose: trimmedPurpose,
         amount,
         walletId,
-        withdrawnOn,
+        withdrawnOn: withdrawnOn || today(),
         ...(trimmedNote ? { note: trimmedNote } : {}),
       });
       navigate("/records");
@@ -115,15 +109,25 @@ export function PaymentPage() {
 
   return (
     <Screen>
-      <header className="mb-4 flex items-center justify-between">
+      <header className="mb-10 flex items-center justify-between">
         <Link
           to="/home"
-          className="grid size-10 place-items-center border border-black"
+          className="grid size-10 place-items-center"
+          aria-label="ホームへ戻る"
         >
           <Icon name="back" />
         </Link>
+        <h1 className="text-xl font-extrabold tracking-[-0.04em]">
+          出金を記録する
+        </h1>
+        <Link
+          to="/home"
+          className="grid size-10 place-items-center text-3xl leading-none"
+          aria-label="記録をやめる"
+        >
+          ×
+        </Link>
       </header>
-      <Heading eyebrow="支払いを追加" title="支払いを記録する" />
       {isLoading ? (
         <Card className="p-4">
           <p className="text-sm" aria-busy="true">
@@ -175,53 +179,67 @@ export function PaymentPage() {
           </Link>
         </Card>
       ) : (
-        <form onSubmit={saveWithdrawal}>
-          <Field label="何に支払いましたか？">
-            <input
-              value={purpose}
-              onChange={(event) => setPurpose(event.target.value)}
-              className="h-12 w-full border border-black px-4 outline-none"
-              maxLength={200}
-              disabled={isSubmitting}
-            />
-          </Field>
-          <Field label="支払った金額">
-            <div className="flex h-12 w-full items-center gap-2 border border-black px-4">
-              <span>¥</span>
+        <form
+          onSubmit={saveWithdrawal}
+          className="flex min-h-[calc(100svh-180px)] flex-col"
+        >
+          <label className="border-b border-black pb-2">
+            <span className="sr-only">金額</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[42px] leading-none font-extrabold">¥</span>
               <input
+                ref={amountInputRef}
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                className="w-full outline-none"
+                className="min-w-0 flex-1 bg-transparent text-right text-[42px] leading-none font-extrabold outline-none placeholder:text-neutral-300"
                 inputMode="numeric"
+                placeholder="0"
+                aria-label="金額"
                 disabled={isSubmitting}
               />
             </div>
-          </Field>
-          <Field label="支払元の財布">
-            <select
-              value={walletId}
-              onChange={(event) => setWalletId(event.target.value)}
-              className="h-12 w-full border border-black bg-white px-4 outline-none"
-              disabled={isSubmitting}
-            >
-              <option value="">選択してください</option>
-              {wallets.map((wallet) => (
-                <option key={wallet.id} value={wallet.id}>
-                  {wallet.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="支払った日">
+          </label>
+          <Card className="mt-6">
+            <label className="block border-b border-black">
+              <span className="sr-only">出金元の財布</span>
+              <select
+                value={walletId}
+                onChange={(event) => setWalletId(event.target.value)}
+                className="h-14 w-full bg-white px-4 text-sm font-bold outline-none"
+                disabled={isSubmitting}
+              >
+                <option value="">どの財布から出金しましたか？</option>
+                {wallets.map((wallet) => (
+                  <option key={wallet.id} value={wallet.id}>
+                    {wallet.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="sr-only">用途</span>
+              <input
+                value={purpose}
+                onChange={(event) => setPurpose(event.target.value)}
+                className="h-14 w-full px-4 text-sm font-bold outline-none placeholder:text-neutral-400"
+                maxLength={200}
+                placeholder="何に使いましたか？"
+                disabled={isSubmitting}
+              />
+            </label>
+          </Card>
+          <label className="mt-3 ml-auto flex w-fit items-center gap-2 border border-black px-2 py-1 text-sm font-bold">
+            <span>日付（任意）</span>
             <input
               type="date"
               value={withdrawnOn}
               onChange={(event) => setWithdrawnOn(event.target.value)}
-              className="h-12 w-full border border-black px-4 outline-none"
+              className="w-28 bg-transparent text-right outline-none"
               disabled={isSubmitting}
             />
-          </Field>
-          <Field label="メモ　（任意）">
+          </label>
+          <label className="mt-6 block text-sm font-bold">
+            <span className="mb-2 block">メモ（任意）</span>
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
@@ -230,16 +248,16 @@ export function PaymentPage() {
               placeholder="例：駅前パーキング"
               disabled={isSubmitting}
             />
-          </Field>
+          </label>
           {submitError && (
-            <p className="mb-4 text-sm" role="alert">
+            <p className="mt-4 text-sm" role="alert">
               {submitError}
             </p>
           )}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-5 grid h-12 w-full place-items-center bg-black text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-neutral-500"
+            className="mt-auto grid h-12 w-full place-items-center bg-black text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-neutral-500"
           >
             {isSubmitting ? "保存中…" : "出金を記録する"}
           </button>

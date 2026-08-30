@@ -151,6 +151,10 @@ export function createGroupWallet(groupId: string, input: CreateWalletInput) {
   return post<Wallet>(`/api/groups/${groupId}/wallets`, input);
 }
 
+export function deleteGroupWallet(groupId: string, walletId: string) {
+  return del(`/api/groups/${groupId}/wallets/${walletId}`);
+}
+
 export async function getGroupWithdrawals(groupId: string) {
   const response = await get<{ withdrawals: Withdrawal[] }>(
     `/api/groups/${groupId}/withdrawals`,
