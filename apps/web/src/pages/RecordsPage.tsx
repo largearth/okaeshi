@@ -1,28 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ApiRequestError,
-  deleteGroupWithdrawal,
-  getGroupWallets,
-  getGroupWithdrawals,
-  type Wallet,
-  type Withdrawal,
-} from "../api";
+import { ApiRequestError, getGroupWithdrawals, type Withdrawal } from "../api";
 import { WithdrawalList } from "../components/expenses";
-import { Heading, Screen } from "../components/layout";
+import { BottomNav } from "../components/layout";
 import { Card } from "../components/ui";
+import { useWalletStore } from "../stores/use-wallet-store";
 import { useGroupContext } from "../use-group-context";
 
 export function RecordsPage() {
   const { currentGroup, errorMessage, isLoading, refresh, unauthenticate } =
     useGroupContext();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
-  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [areRecordsLoading, setAreRecordsLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deletingWithdrawalId, setDeletingWithdrawalId] = useState<
-    string | null
-  >(null);
+  const wallets = useWalletStore((state) => state.wallets);
 
   const refreshRecords = useCallback(async () => {
     if (!currentGroup) return;
@@ -30,15 +20,10 @@ export function RecordsPage() {
     setAreRecordsLoading(true);
     setRecordsError(null);
     try {
-      const [nextWithdrawals, nextWallets] = await Promise.all([
-        getGroupWithdrawals(currentGroup.id),
-        getGroupWallets(currentGroup.id),
-      ]);
+      const nextWithdrawals = await getGroupWithdrawals(currentGroup.id);
       setWithdrawals(nextWithdrawals);
-      setWallets(nextWallets);
     } catch (error) {
       setWithdrawals([]);
-      setWallets([]);
       if (error instanceof ApiRequestError && error.status === 401) {
         unauthenticate();
         return;
@@ -57,42 +42,18 @@ export function RecordsPage() {
     void Promise.resolve().then(refreshRecords);
   }, [refreshRecords]);
 
-  const deleteWithdrawal = async (withdrawal: Withdrawal) => {
-    if (!currentGroup) return;
-    if (!window.confirm(`「${withdrawal.purpose}」を削除しますか？`)) return;
-
-    setDeletingWithdrawalId(withdrawal.id);
-    setDeleteError(null);
-    try {
-      await deleteGroupWithdrawal(currentGroup.id, withdrawal.id);
-      setWithdrawals((currentWithdrawals) =>
-        currentWithdrawals.filter((item) => item.id !== withdrawal.id),
-      );
-    } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 401) {
-        unauthenticate();
-        return;
-      }
-      setDeleteError(
-        error instanceof Error
-          ? error.message
-          : "出金記録を削除できませんでした。",
-      );
-    } finally {
-      setDeletingWithdrawalId(null);
-    }
-  };
-
   const walletNameById = new Map(
     wallets.map((wallet) => [wallet.id, wallet.name]),
   );
 
   return (
-    <Screen active="records">
-      <Heading
-        eyebrow={currentGroup?.name ?? "支払いの履歴"}
-        title="出金記録"
-      />
+    <main className="mx-auto min-h-svh w-full max-w-2xl bg-white px-6 pt-8 pb-28">
+      <header className="mb-9">
+        <h1 className="text-[34px] leading-tight font-extrabold tracking-[-0.06em] text-black">
+          Record
+        </h1>
+        <p className="text-xs font-bold text-black">出金記録を管理</p>
+      </header>
       {isLoading ? (
         <Card className="p-4">
           <p className="text-sm" aria-busy="true">
@@ -138,22 +99,12 @@ export function RecordsPage() {
           <p className="text-sm text-neutral-600">まだ出金記録はありません。</p>
         </Card>
       ) : (
-        <>
-          {deleteError && (
-            <Card className="mb-4 p-4">
-              <p className="text-sm" role="alert">
-                {deleteError}
-              </p>
-            </Card>
-          )}
-          <WithdrawalList
-            withdrawals={withdrawals}
-            walletNameById={walletNameById}
-            deletingWithdrawalId={deletingWithdrawalId}
-            onDelete={(withdrawal) => void deleteWithdrawal(withdrawal)}
-          />
-        </>
+        <WithdrawalList
+          withdrawals={withdrawals}
+          walletNameById={walletNameById}
+        />
       )}
-    </Screen>
+      <BottomNav active="records" />
+    </main>
   );
 }
