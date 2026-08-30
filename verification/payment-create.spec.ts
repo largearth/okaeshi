@@ -38,8 +38,13 @@ test("認証済みの状態から出金を作成できる", async ({ page }) => 
   const amountInput = page.getByLabel("金額");
   await expect(amountInput).toBeFocused();
   await expect(page.getByLabel("日付（任意）")).toHaveValue(today());
+  await expect(
+    page.getByRole("button", { name: "出金を記録する" }),
+  ).toBeDisabled();
+  await expect(page.getByRole("link", { name: "キャンセル" })).toBeVisible();
 
-  await amountInput.fill("500");
+  await amountInput.fill("1000");
+  await expect(amountInput).toHaveValue("1,000");
   await page.getByLabel("出金元の財布").selectOption({
     label: "E2E 出金作成用財布",
   });
@@ -54,7 +59,7 @@ test("認証済みの状態から出金を作成できる", async ({ page }) => 
   await page.waitForURL("**/records");
   await expect(page.getByRole("heading", { name: "出金記録" })).toBeVisible();
   await expect(page.getByText("E2E 出金作成", { exact: true })).toBeVisible();
-  await expect(page.getByText("¥500", { exact: true })).toBeVisible();
+  await expect(page.getByText("¥1,000", { exact: true }).first()).toBeVisible();
   await page.screenshot({
     path: "verification-artifacts/payment-create-after.png",
     fullPage: true,
