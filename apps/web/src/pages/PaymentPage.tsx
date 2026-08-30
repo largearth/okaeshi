@@ -1,28 +1,21 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  ApiRequestError,
-  createGroupWithdrawal,
-  getGroupWallets,
-  type Wallet,
-} from "../api";
+import { ApiRequestError, createGroupWithdrawal } from "../api";
 import { Screen } from "../components/layout";
 import { Card, Icon } from "../components/ui";
+import { useWalletStore } from "../stores/use-wallet-store";
 import { useGroupContext } from "../use-group-context";
 
 export function PaymentPage() {
   const navigate = useNavigate();
   const { currentGroup, errorMessage, isLoading, refresh, unauthenticate } =
     useGroupContext();
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [walletsError, setWalletsError] = useState<string | null>(null);
-  const [areWalletsLoading, setAreWalletsLoading] = useState(false);
+  const wallets = useWalletStore((state) => state.wallets);
+  const walletStatus = useWalletStore((state) => state.walletStatus);
+  const walletErrorMessage = useWalletStore(
+    (state) => state.walletErrorMessage,
+  );
+  const retryWalletLoad = useWalletStore((state) => state.retryWalletLoad);
   const [purpose, setPurpose] = useState("");
   const [amount, setAmount] = useState("");
   const [walletId, setWalletId] = useState("");
@@ -32,38 +25,11 @@ export function PaymentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const amountInputRef = useRef<HTMLInputElement>(null);
 
-  const refreshWallets = useCallback(async () => {
-    if (!currentGroup) return;
-
-    setAreWalletsLoading(true);
-    setWalletsError(null);
-    try {
-      setWallets(await getGroupWallets(currentGroup.id));
-    } catch (error) {
-      setWallets([]);
-      if (error instanceof ApiRequestError && error.status === 401) {
-        unauthenticate();
-        return;
-      }
-      setWalletsError(
-        error instanceof Error
-          ? error.message
-          : "財布情報の取得に失敗しました。",
-      );
-    } finally {
-      setAreWalletsLoading(false);
-    }
-  }, [currentGroup, unauthenticate]);
-
   useEffect(() => {
-    void Promise.resolve().then(refreshWallets);
-  }, [refreshWallets]);
-
-  useEffect(() => {
-    if (!isLoading && !areWalletsLoading && wallets.length > 0) {
+    if (!isLoading && walletStatus === "success" && wallets.length > 0) {
       amountInputRef.current?.focus();
     }
-  }, [areWalletsLoading, isLoading, wallets.length]);
+  }, [isLoading, walletStatus, wallets.length]);
 
   const saveWithdrawal = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -149,20 +115,20 @@ export function PaymentPage() {
             </button>
           )}
         </Card>
-      ) : areWalletsLoading ? (
+      ) : walletStatus === "idle" || walletStatus === "loading" ? (
         <Card className="p-4">
           <p className="text-sm" aria-busy="true">
             財布情報を取得中です…
           </p>
         </Card>
-      ) : walletsError ? (
+      ) : walletStatus === "error" ? (
         <Card className="p-4">
           <p className="text-sm" role="alert">
-            {walletsError}
+            {walletErrorMessage ?? "財布情報の取得に失敗しました。"}
           </p>
           <button
             type="button"
-            onClick={() => void refreshWallets()}
+            onClick={retryWalletLoad}
             className="mt-3 text-sm font-bold underline"
           >
             再試行
