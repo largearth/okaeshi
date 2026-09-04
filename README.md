@@ -10,11 +10,11 @@ Okaeshiは、夫婦・家族・少人数グループで発生する立替と精�
 
 夫婦や家族で生活していると、こんな支払いが頻繁に発生します。
 
-* 個人のクレジットカードで共有の日用品を購入した
-* 家計用ではない口座から一時的に支払った
-* 共有財布から、本来とは異なる用途の支払いをした
-* 「あとで返そう」と思ったまま忘れてしまった
-* 精算するときになって、どの財布へ返せばいいか分からなくなった
+- 個人のクレジットカードで共有の日用品を購入した
+- 家計用ではない口座から一時的に支払った
+- 共有財布から、本来とは異なる用途の支払いをした
+- 「あとで返そう」と思ったまま忘れてしまった
+- 精算するときになって、どの財布へ返せばいいか分からなくなった
 
 これらを家計簿で管理しようとすると、必要以上に多くの支出を記録することになります。
 
@@ -44,16 +44,16 @@ Okaeshiが管理するのは、すべての支出ではありません。
 
 立替が発生した瞬間に確定しているのは、
 
-* いくら使ったか
-* どの財布から支払ったか
-* 何に使ったか
+- いくら使ったか
+- どの財布から支払ったか
+- 何に使ったか
 
 といった「支出の事実」です。
 
 一方で、
 
-* 誰がいくら負担するのか
-* 誰に請求するのか
+- 誰がいくら負担するのか
+- 誰に請求するのか
 
 までは、その場で決まっていないことがあります。
 
@@ -106,15 +106,15 @@ flowchart TD
 
 主要なドメインは次のとおりです。
 
-| Domain     | Role                 |
-| ---------- | -------------------- |
+| Domain     | Role                                     |
+| ---------- | ---------------------------------------- |
 | Group      | メンバー・財布・出金・請求を共有する単位 |
-| User       | グループを利用するユーザー        |
-| Wallet     | 実際にお金を保有する単位         |
-| Withdrawal | 財布からお金が出た事実          |
-| Allocation | 出金に対する各ユーザーの負担       |
-| Claim      | ユーザーから財布への返済依頼       |
-| Activity   | グループ内で行われた操作履歴       |
+| User       | グループを利用するユーザー               |
+| Wallet     | 実際にお金を保有する単位                 |
+| Withdrawal | 財布からお金が出た事実                   |
+| Allocation | 出金に対する各ユーザーの負担             |
+| Claim      | ユーザーから財布への返済依頼             |
+| Activity   | グループ内で行われた操作履歴             |
 
 ### Withdrawal lifecycle
 
@@ -153,16 +153,16 @@ ClaimはWithdrawalとは独立した集約として設計し、将来的に複�
 
 現在、以下の機能を中心に開発しています。
 
-* 認証
-* グループ管理
-* 個人財布・共有財布の管理
-* 出金記録
-* 出金記録一覧・詳細
-* 負担額の設定
-* 請求管理
-* 精算状態の管理
-* アクティビティ管理
-* PWA対応
+- 認証
+- グループ管理
+- 個人財布・共有財布の管理
+- 出金記録
+- 出金記録一覧・詳細
+- 負担額の設定
+- 請求管理
+- 精算状態の管理
+- アクティビティ管理
+- PWA対応
 
 ## Screenshot
 
@@ -203,42 +203,42 @@ flowchart LR
 
 ### Frontend
 
-* React
-* TypeScript
-* Vite
-* React Router
-* Zustand
-* Tailwind CSS
-* Better Auth
+- React
+- TypeScript
+- Vite
+- React Router
+- Zustand
+- Tailwind CSS
+- Better Auth
 
 ### Backend
 
-* Hono
-* TypeScript
-* Drizzle ORM
-* Zod
-* Better Auth
-* PostgreSQL
-* Neon
-* Cloudflare Workers
+- Hono
+- TypeScript
+- Drizzle ORM
+- Zod
+- Better Auth
+- PostgreSQL
+- Neon
+- Cloudflare Workers
 
 ### Testing / Quality
 
-* Vitest
-* Playwright
-* ESLint
-* TypeScript
-* Prettier
-* Husky
+- Vitest
+- Playwright
+- ESLint
+- TypeScript
+- Prettier
+- Husky
 
 ### Documentation
 
-* Astro
+- Astro
 
 ### Monorepo
 
-* pnpm workspace
-* Turborepo
+- pnpm workspace
+- Turborepo
 
 ## Repository structure
 
@@ -255,10 +255,10 @@ flowchart LR
 
 プロダクト仕様やドメインルールは、実装とは別にドキュメントとして管理しています。
 
-* [プロダクト概要・要件](./apps/docs/src/content/product/overview.md)
-* [ドメインモデル](./apps/docs/src/content/product/domain.md)
-* [デザインシステム](./apps/docs/src/content/product/design-system.md)
-* [用語集](./apps/docs/src/content/product/glossary.md)
+- [プロダクト概要・要件](./apps/docs/src/content/product/overview.md)
+- [ドメインモデル](./apps/docs/src/content/product/domain.md)
+- [デザインシステム](./apps/docs/src/content/product/design-system.md)
+- [用語集](./apps/docs/src/content/product/glossary.md)
 
 ## Development
 
