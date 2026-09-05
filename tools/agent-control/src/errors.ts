@@ -1,5 +1,6 @@
 export const errorCodes = [
   "DAEMON_NOT_RUNNING",
+  "HEALTH_CHECK_FAILED",
   "INVALID_ARGUMENT",
   "SESSION_NOT_FOUND",
   "SEED_FAILED",
@@ -8,6 +9,7 @@ export const errorCodes = [
   "ELEMENT_NOT_FOUND",
   "INTERACTION_FAILED",
   "SCREENSHOT_FAILED",
+  "SETTLE_TIMEOUT",
   "INTERNAL_ERROR",
 ] as const;
 

@@ -2,8 +2,8 @@
 
 import { Command, CommanderError } from "commander";
 
-import { requestDaemon } from "./client.js";
-import { failure, type AgentControlResponse } from "./response.js";
+import { requestDaemon, requestDoctor } from "./client.js";
+import { failure } from "./response.js";
 
 const program = new Command();
 
@@ -14,6 +14,13 @@ program
   .exitOverride()
   .configureOutput({
     writeErr: () => undefined,
+  });
+
+program
+  .command("doctor")
+  .description("Agent Controlの検証環境を診断する")
+  .action(async () => {
+    await run(() => requestDoctor());
   });
 
 program
@@ -36,6 +43,32 @@ program
   .description("現在の画面の主要なsemantic elementを取得する")
   .action(async () => {
     await run(() => requestDaemon("/snapshot"));
+  });
+
+program
+  .command("console")
+  .option("--errors-only")
+  .description("現在のsessionのconsole error、warning、page errorを取得する")
+  .action(async (options: { errorsOnly?: boolean }) => {
+    await run(() =>
+      requestDaemon(
+        `/console?errorsOnly=${options.errorsOnly === true ? "true" : "false"}`,
+      ),
+    );
+  });
+
+program
+  .command("network-summary")
+  .description("現在のsessionのnetwork failureを要約する")
+  .action(async () => {
+    await run(() => requestDaemon("/network-summary"));
+  });
+
+program
+  .command("wait-settle")
+  .description("現在のpageのnetwork activityが安定するまで待つ")
+  .action(async () => {
+    await run(() => requestDaemon("/wait-settle", { method: "POST" }));
   });
 
 program
@@ -86,9 +119,7 @@ program
     await run(() => requestDaemon("/screenshot", { method: "POST" }));
   });
 
-async function run<T extends object>(
-  request: () => Promise<AgentControlResponse<T>>,
-): Promise<void> {
+async function run(request: () => Promise<{ ok: boolean }>): Promise<void> {
   const response = await request();
   process.stdout.write(`${JSON.stringify(response)}\n`);
   if (!response.ok) process.exitCode = 1;

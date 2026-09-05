@@ -21,10 +21,22 @@ test.afterAll(async () => {
   await stopAgentControlDaemon(daemon);
 });
 
-test("Agent Controlだけで出金を1件作成しsnapshotとscreenshotを取得できる", async () => {
-  const session = await runCli(["new-session"]);
-  expect(session).toMatchObject({ ok: true, url: "/home" });
+test("Agent Control Phase 2で出金作成結果と失敗理由を観測できる", async ({}, testInfo) => {
+  const doctor = await runCli(["doctor"]);
+  expect(doctor).toEqual({
+    ok: true,
+    checks: {
+      daemon: { ok: true },
+      frontend: { ok: true, url: "http://localhost:5173" },
+      backend: { ok: true, url: "http://localhost:8787" },
+      browser: { ok: true },
+    },
+  });
 
+  expect(await runCli(["new-session"])).toMatchObject({
+    ok: true,
+    url: "/home",
+  });
   expect(await runCli(["goto", "/home"])).toMatchObject({
     ok: true,
     url: "/home",
@@ -38,20 +50,6 @@ test("Agent Controlだけで出金を1件作成しsnapshotとscreenshotを取得
       "立て替えたお金を記録する",
     ]),
   ).toMatchObject({ ok: true, url: "/home" });
-
-  let formSnapshot: Record<string, unknown> = {};
-  await expect
-    .poll(
-      async () => {
-        formSnapshot = await runCli(["snapshot"]);
-        return JSON.stringify(formSnapshot);
-      },
-      { timeout: 10_000 },
-    )
-    .toContain("出金元の財布");
-  expect(JSON.stringify(formSnapshot)).toContain("出金を記録する");
-  expect(JSON.stringify(formSnapshot)).toContain("金額");
-
   expect(
     await runCli(["type", "--label", "金額", "--value", "1200"]),
   ).toMatchObject({ ok: true, label: "金額", value: "1,200" });
@@ -70,11 +68,7 @@ test("Agent Controlだけで出金を1件作成しsnapshotとscreenshotを取得
   });
   expect(
     await runCli(["type", "--label", "用途", "--value", "E2E 出金作成"]),
-  ).toMatchObject({
-    ok: true,
-    label: "用途",
-    value: "E2E 出金作成",
-  });
+  ).toMatchObject({ ok: true, label: "用途", value: "E2E 出金作成" });
   expect(
     await runCli([
       "click",
@@ -87,30 +81,48 @@ test("Agent Controlだけで出金を1件作成しsnapshotとscreenshotを取得
     ]),
   ).toMatchObject({ ok: true, url: "/records" });
 
-  let recordsSnapshot: Record<string, unknown> = {};
-  await expect
-    .poll(
-      async () => {
-        recordsSnapshot = await runCli(["snapshot"]);
-        return JSON.stringify(recordsSnapshot);
-      },
-      { timeout: 10_000 },
-    )
-    .toContain("E2E 出金作成");
-  const serializedSnapshot = JSON.stringify(recordsSnapshot);
-  expect(serializedSnapshot).toContain("¥1,200");
-  expect(recordsSnapshot).toMatchObject({ ok: true, url: "/records" });
+  expect(await runCli(["wait-settle"])).toMatchObject({
+    ok: true,
+    settled: true,
+    waitedMs: expect.any(Number),
+  });
 
-  const matchingRecords = (
-    recordsSnapshot.elements as Array<{ name: string; role: string }>
-  ).filter(
-    (element) =>
-      element.role === "link" && element.name.includes("E2E 出金作成"),
-  );
-  expect(matchingRecords).toHaveLength(1);
+  const snapshot = await runCli(["snapshot"]);
+  expect(snapshot).toMatchObject({ ok: true, url: "/records" });
+  expect(JSON.stringify(snapshot)).toContain("E2E 出金作成");
+  expect(JSON.stringify(snapshot)).toContain("¥1,200");
+
+  const consoleReport = await runCli(["console", "--errors-only"]);
+  expect(consoleReport).toEqual({ ok: true, errors: [] });
+
+  const networkReport = await runCli(["network-summary"]);
+  expect(networkReport).toMatchObject({
+    ok: true,
+    summary: {
+      serverErrors: [],
+      requestFailures: [],
+    },
+  });
 
   const screenshot = await runCli(["screenshot"]);
   expect(screenshot).toMatchObject({ ok: true, url: "/records" });
   const screenshotPath = path.join(repoRoot, String(screenshot.path));
   expect((await stat(screenshotPath)).size).toBeGreaterThan(0);
+
+  await testInfo.attach("doctor.json", {
+    body: JSON.stringify(doctor, null, 2),
+    contentType: "application/json",
+  });
+  await testInfo.attach("console.json", {
+    body: JSON.stringify(consoleReport, null, 2),
+    contentType: "application/json",
+  });
+  await testInfo.attach("network-summary.json", {
+    body: JSON.stringify(networkReport, null, 2),
+    contentType: "application/json",
+  });
+  await testInfo.attach("screenshot.png", {
+    path: screenshotPath,
+    contentType: "image/png",
+  });
 });

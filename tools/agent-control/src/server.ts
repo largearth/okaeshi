@@ -15,15 +15,19 @@ import { createSeedPaymentCreate, type SeedPaymentCreate } from "./seed.js";
 type BrowserManagerContract = Pick<
   BrowserManager,
   | "clickByRole"
+  | "consoleReport"
   | "createAuthenticatedSession"
   | "goto"
   | "hasSession"
+  | "isBrowserConnected"
+  | "networkSummary"
   | "screenshot"
   | "selectByLabel"
   | "snapshot"
   | "start"
   | "stop"
   | "typeByLabel"
+  | "waitForSettle"
 >;
 
 type ServerDependencies = {
@@ -31,19 +35,25 @@ type ServerDependencies = {
   config: AgentControlConfig;
   logger: DaemonLogger;
   seedPaymentCreate: SeedPaymentCreate;
+  fetchImplementation?: typeof fetch;
 };
 
 export function createAgentControlServer(dependencies: ServerDependencies) {
-  const { browserManager, config, logger, seedPaymentCreate } = dependencies;
+  const {
+    browserManager,
+    config,
+    logger,
+    seedPaymentCreate,
+    fetchImplementation = fetch,
+  } = dependencies;
 
   return createServer(async (request, response) => {
     try {
-      const route = `${request.method ?? "GET"} ${
-        new URL(
-          request.url ?? "/",
-          `http://${config.daemonHost}:${config.daemonPort}`,
-        ).pathname
-      }`;
+      const requestUrl = new URL(
+        request.url ?? "/",
+        `http://${config.daemonHost}:${config.daemonPort}`,
+      );
+      const route = `${request.method ?? "GET"} ${requestUrl.pathname}`;
 
       switch (route) {
         case "GET /health":
@@ -51,6 +61,29 @@ export function createAgentControlServer(dependencies: ServerDependencies) {
             ok: true,
             session: browserManager.hasSession() ? "active" : "none",
           });
+        case "GET /doctor": {
+          const checks = await runDoctorChecks(
+            config,
+            browserManager,
+            fetchImplementation,
+          );
+          const ok = Object.values(checks).every((check) => check.ok);
+          return writeJson(
+            response,
+            ok ? 200 : 503,
+            ok
+              ? { ok: true, checks }
+              : {
+                  ok: false,
+                  checks,
+                  error: {
+                    code: "HEALTH_CHECK_FAILED",
+                    message:
+                      "One or more Agent Control dependencies are unavailable",
+                  },
+                },
+          );
+        }
         case "POST /session": {
           if (config.environment !== "development") {
             throw new AgentControlError(
@@ -80,6 +113,26 @@ export function createAgentControlServer(dependencies: ServerDependencies) {
             response,
             200,
             success(await browserManager.snapshot()),
+          );
+        case "GET /console": {
+          const errorsOnly = parseErrorsOnly(requestUrl);
+          return writeJson(
+            response,
+            200,
+            success(browserManager.consoleReport({ errorsOnly })),
+          );
+        }
+        case "GET /network-summary":
+          return writeJson(
+            response,
+            200,
+            success({ summary: browserManager.networkSummary() }),
+          );
+        case "POST /wait-settle":
+          return writeJson(
+            response,
+            200,
+            success(await browserManager.waitForSettle()),
           );
         case "POST /type": {
           const body = await readJson(request);
@@ -151,6 +204,55 @@ export function createAgentControlServer(dependencies: ServerDependencies) {
       );
     }
   });
+}
+
+type DoctorChecks = {
+  daemon: { ok: boolean };
+  frontend: { ok: boolean; url: string };
+  backend: { ok: boolean; url: string };
+  browser: { ok: boolean };
+};
+
+async function runDoctorChecks(
+  config: AgentControlConfig,
+  browserManager: Pick<BrowserManagerContract, "isBrowserConnected">,
+  fetchImplementation: typeof fetch,
+): Promise<DoctorChecks> {
+  const [frontend, backend] = await Promise.all([
+    checkHttpDependency(config.webOrigin, fetchImplementation),
+    checkHttpDependency(config.apiOrigin, fetchImplementation),
+  ]);
+  return {
+    daemon: { ok: true },
+    frontend,
+    backend,
+    browser: { ok: browserManager.isBrowserConnected() },
+  };
+}
+
+async function checkHttpDependency(
+  url: string,
+  fetchImplementation: typeof fetch,
+): Promise<{ ok: boolean; url: string }> {
+  try {
+    const response = await fetchImplementation(url, {
+      signal: AbortSignal.timeout(2_000),
+    });
+    return { ok: response.ok, url };
+  } catch {
+    return { ok: false, url };
+  }
+}
+
+function parseErrorsOnly(requestUrl: URL): boolean {
+  const value = requestUrl.searchParams.get("errorsOnly");
+  if (value === null || value === "false") return false;
+  if (value === "true") return true;
+  throw new AgentControlError(
+    "INVALID_ARGUMENT",
+    "errorsOnlyにはtrueまたはfalseを指定してください。",
+    400,
+  );
 }
 
 export type RunningDaemon = {
