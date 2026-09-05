@@ -20,6 +20,66 @@ afterEach(async () => {
 });
 
 describe("Agent Control server", () => {
+  it("doctorで全dependencyの正常状態を返す", async () => {
+    const origin = await start({
+      browserManager: fakeBrowserManager(),
+      seedPaymentCreate: async () => undefined,
+      fetchImplementation: async () => new Response("ok"),
+    });
+
+    const response = await fetch(`${origin}/doctor`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ok: true,
+      checks: {
+        daemon: { ok: true },
+        frontend: { ok: true, url: "http://localhost:5173" },
+        backend: { ok: true, url: "http://localhost:8787" },
+        browser: { ok: true },
+      },
+    });
+  });
+
+  it.each([
+    ["frontend", "http://localhost:5173"],
+    ["backend", "http://localhost:8787"],
+  ] as const)("doctorで停止した%sを報告する", async (_name, failedUrl) => {
+    const origin = await start({
+      browserManager: fakeBrowserManager(),
+      seedPaymentCreate: async () => undefined,
+      fetchImplementation: async (input) => {
+        if (String(input) === failedUrl) throw new Error("unavailable");
+        return new Response("ok");
+      },
+    });
+
+    const response = await fetch(`${origin}/doctor`);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      checks: { [_name]: { ok: false, url: failedUrl } },
+      error: { code: "HEALTH_CHECK_FAILED" },
+    });
+  });
+
+  it("doctorでbrowser未接続を報告する", async () => {
+    const browserManager = fakeBrowserManager();
+    browserManager.isBrowserConnected.mockReturnValue(false);
+    const origin = await start({
+      browserManager,
+      seedPaymentCreate: async () => undefined,
+      fetchImplementation: async () => new Response("ok"),
+    });
+
+    const response = await fetch(`${origin}/doctor`);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      checks: { browser: { ok: false } },
+      error: { code: "HEALTH_CHECK_FAILED" },
+    });
+  });
+
   it("session作成とbrowser操作をJSON endpointへ公開する", async () => {
     const seedPaymentCreate = vi.fn(async () => undefined);
     const browserManager = fakeBrowserManager();
@@ -48,6 +108,28 @@ describe("Agent Control server", () => {
       label: "出金元の財布",
       option: "E2E 出金作成用財布",
     });
+
+    expect(
+      await (await fetch(`${origin}/console?errorsOnly=true`)).json(),
+    ).toEqual({ ok: true, errors: [] });
+    expect(browserManager.consoleReport).toHaveBeenCalledWith({
+      errorsOnly: true,
+    });
+
+    expect(await (await fetch(`${origin}/network-summary`)).json()).toEqual({
+      ok: true,
+      summary: {
+        total: 0,
+        failed: 0,
+        clientErrors: [],
+        serverErrors: [],
+        requestFailures: [],
+      },
+    });
+
+    expect(
+      await (await fetch(`${origin}/wait-settle`, { method: "POST" })).json(),
+    ).toEqual({ ok: true, settled: true, waitedMs: 300 });
   });
 
   it("不正なrequestをINVALID_ARGUMENTに正規化する", async () => {
@@ -111,12 +193,23 @@ describe("Agent Control server", () => {
 function fakeBrowserManager() {
   return {
     clickByRole: vi.fn(async () => "/records"),
+    consoleReport: vi.fn((options?: { errorsOnly?: boolean }) =>
+      options?.errorsOnly ? { errors: [] } : { errors: [], warnings: [] },
+    ),
     createAuthenticatedSession: vi.fn(async () => ({
       session: "test-session",
       url: "/home",
     })),
     goto: vi.fn(async (path: string) => path),
     hasSession: vi.fn(() => true),
+    isBrowserConnected: vi.fn(() => true),
+    networkSummary: vi.fn(() => ({
+      total: 0,
+      failed: 0,
+      clientErrors: [],
+      serverErrors: [],
+      requestFailures: [],
+    })),
     screenshot: vi.fn(async () => ({
       path: "artifacts/agent/screenshots/test.png",
       url: "/records",
@@ -126,15 +219,21 @@ function fakeBrowserManager() {
     start: vi.fn(async () => undefined),
     stop: vi.fn(async () => undefined),
     typeByLabel: vi.fn(async (_label: string, value: string) => value),
+    waitForSettle: vi.fn(async () => ({
+      settled: true as const,
+      waitedMs: 300,
+    })),
   };
 }
 
 async function start({
   browserManager,
   seedPaymentCreate,
+  fetchImplementation,
 }: {
   browserManager: ReturnType<typeof fakeBrowserManager>;
   seedPaymentCreate: () => Promise<void>;
+  fetchImplementation?: typeof fetch;
 }): Promise<string> {
   const config: AgentControlConfig = {
     apiOrigin: "http://localhost:8787",
@@ -156,6 +255,7 @@ async function start({
       info: async () => undefined,
     },
     seedPaymentCreate,
+    fetchImplementation,
   });
   openServers.push(server);
   await new Promise<void>((resolve, reject) => {

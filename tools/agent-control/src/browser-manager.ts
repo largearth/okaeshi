@@ -7,7 +7,10 @@ import {
   errors,
   type Browser,
   type BrowserContext,
+  type ConsoleMessage,
   type Page,
+  type Request,
+  type Response,
 } from "playwright";
 
 import type { AgentControlConfig } from "./config.js";
@@ -19,6 +22,31 @@ export type SnapshotElement = {
   value?: string;
 };
 
+export type ConsoleEntry = {
+  type: "console.error" | "console.warn" | "pageerror";
+  message: string;
+};
+
+type NetworkTarget = { path: string } | { origin: string };
+
+export type NetworkResponseEntry = NetworkTarget & {
+  method: string;
+  status: number;
+};
+
+export type NetworkRequestFailureEntry = NetworkTarget & {
+  failureReason: string;
+  method: string;
+};
+
+export type NetworkSummary = {
+  total: number;
+  failed: number;
+  clientErrors: NetworkResponseEntry[];
+  serverErrors: NetworkResponseEntry[];
+  requestFailures: NetworkRequestFailureEntry[];
+};
+
 type AriaRole = Parameters<Page["getByRole"]>[0];
 
 export class BrowserManager {
@@ -26,6 +54,13 @@ export class BrowserManager {
   private context: BrowserContext | undefined;
   private page: Page | undefined;
   private sessionId: string | undefined;
+  private consoleErrors: ConsoleEntry[] = [];
+  private consoleWarnings: ConsoleEntry[] = [];
+  private totalRequests = 0;
+  private clientErrors: NetworkResponseEntry[] = [];
+  private serverErrors: NetworkResponseEntry[] = [];
+  private requestFailures: NetworkRequestFailureEntry[] = [];
+  private networkActivityVersion = 0;
 
   constructor(private readonly config: AgentControlConfig) {}
 
@@ -44,6 +79,7 @@ export class BrowserManager {
       viewport: { width: 393, height: 852 },
     });
     this.page = await this.context.newPage();
+    this.attachDiagnostics(this.page);
     this.sessionId = randomUUID();
 
     try {
@@ -221,6 +257,61 @@ export class BrowserManager {
     }
   }
 
+  consoleReport(options?: { errorsOnly?: boolean }): {
+    errors: ConsoleEntry[];
+    warnings?: ConsoleEntry[];
+  } {
+    this.getPage();
+    const report: {
+      errors: ConsoleEntry[];
+      warnings?: ConsoleEntry[];
+    } = { errors: [...this.consoleErrors] };
+    if (!options?.errorsOnly) report.warnings = [...this.consoleWarnings];
+    return report;
+  }
+
+  networkSummary(): NetworkSummary {
+    this.getPage();
+    return {
+      total: this.totalRequests,
+      failed:
+        this.clientErrors.length +
+        this.serverErrors.length +
+        this.requestFailures.length,
+      clientErrors: [...this.clientErrors],
+      serverErrors: [...this.serverErrors],
+      requestFailures: [...this.requestFailures],
+    };
+  }
+
+  async waitForSettle(): Promise<{ settled: true; waitedMs: number }> {
+    this.getPage();
+    const startedAt = Date.now();
+    let quietSince = startedAt;
+    let observedActivityVersion = this.networkActivityVersion;
+
+    while (Date.now() - startedAt < 5_000) {
+      if (observedActivityVersion !== this.networkActivityVersion) {
+        observedActivityVersion = this.networkActivityVersion;
+        quietSince = Date.now();
+      }
+      if (Date.now() - quietSince >= 300) {
+        return { settled: true, waitedMs: Date.now() - startedAt };
+      }
+      await delay(25);
+    }
+
+    throw new AgentControlError(
+      "SETTLE_TIMEOUT",
+      "Page did not settle within the allowed time",
+      408,
+    );
+  }
+
+  isBrowserConnected(): boolean {
+    return this.browser?.isConnected() ?? false;
+  }
+
   hasSession(): boolean {
     return Boolean(this.context && this.page && this.sessionId);
   }
@@ -290,12 +381,126 @@ export class BrowserManager {
     return slug || "root";
   }
 
+  private attachDiagnostics(page: Page): void {
+    page.on("console", (message) => this.collectConsoleMessage(message));
+    page.on("pageerror", (error) => {
+      this.consoleErrors.push({
+        type: "pageerror",
+        message: sanitizeDiagnosticText(error.message),
+      });
+    });
+    page.on("request", () => this.collectRequest());
+    page.on("response", (response) => this.collectResponse(response));
+    page.on("requestfailed", (request) => this.collectRequestFailure(request));
+  }
+
+  private collectConsoleMessage(message: ConsoleMessage): void {
+    if (message.type() === "error") {
+      this.consoleErrors.push({
+        type: "console.error",
+        message: sanitizeDiagnosticText(message.text()),
+      });
+    } else if (message.type() === "warning") {
+      this.consoleWarnings.push({
+        type: "console.warn",
+        message: sanitizeDiagnosticText(message.text()),
+      });
+    }
+  }
+
+  private collectRequest(): void {
+    this.totalRequests += 1;
+    this.markNetworkActivity();
+  }
+
+  private collectResponse(response: Response): void {
+    this.markNetworkActivity();
+    const status = response.status();
+    if (status < 400 || status >= 600) return;
+
+    const entry: NetworkResponseEntry = {
+      method: response.request().method(),
+      ...this.networkTarget(response.url()),
+      status,
+    };
+    if (status < 500) this.clientErrors.push(entry);
+    else this.serverErrors.push(entry);
+  }
+
+  private collectRequestFailure(request: Request): void {
+    this.markNetworkActivity();
+    this.requestFailures.push({
+      method: request.method(),
+      ...this.networkTarget(request.url()),
+      failureReason: sanitizeDiagnosticText(
+        request.failure()?.errorText ?? "Unknown request failure",
+      ),
+    });
+  }
+
+  private markNetworkActivity(): void {
+    this.networkActivityVersion += 1;
+  }
+
+  private networkTarget(rawUrl: string): NetworkTarget {
+    const url = new URL(rawUrl);
+    const firstPartyOrigins = new Set([
+      new URL(this.config.apiOrigin).origin,
+      new URL(this.config.webOrigin).origin,
+    ]);
+    return firstPartyOrigins.has(url.origin)
+      ? { path: url.pathname }
+      : { origin: url.origin };
+  }
+
+  private resetDiagnostics(): void {
+    this.consoleErrors = [];
+    this.consoleWarnings = [];
+    this.totalRequests = 0;
+    this.clientErrors = [];
+    this.serverErrors = [];
+    this.requestFailures = [];
+    this.networkActivityVersion = 0;
+  }
+
   private async closeContext(): Promise<void> {
     await this.context?.close();
     this.context = undefined;
     this.page = undefined;
     this.sessionId = undefined;
+    this.resetDiagnostics();
   }
+}
+
+function sanitizeDiagnosticText(value: string): string {
+  const withoutSensitiveHeaders = value.replace(
+    /\b(authorization|cookie|set-cookie)\s*[:=]\s*[^\r\n]*/giu,
+    "$1: [REDACTED]",
+  );
+  const withoutSensitiveValues = withoutSensitiveHeaders.replace(
+    /\b(token|credential|password|secret)\b(["']?\s*[:=]\s*["']?)[^"',;\s}\]]+/giu,
+    "$1$2[REDACTED]",
+  );
+  const withoutBearer = withoutSensitiveValues.replace(
+    /\bBearer\s+[A-Za-z0-9._~+/=-]+/giu,
+    "Bearer [REDACTED]",
+  );
+  const withoutJwt = withoutBearer.replace(
+    /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/gu,
+    "[REDACTED]",
+  );
+  return withoutJwt.replace(/https?:\/\/[^\s"'<>]+/giu, (candidate) => {
+    try {
+      const url = new URL(candidate);
+      return `${url.origin}${url.pathname}`;
+    } catch {
+      return candidate;
+    }
+  });
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function collectSnapshotElements(nodes: Element[]): SnapshotElement[] {
